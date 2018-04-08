@@ -28,11 +28,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
   "github.com/fsnotify/fsnotify"
+  "runtime"
 )
 
-var Verbose bool
+var Verbose int
 var BashCompletion bool
 var ReleaseVersion string
+var ProjectVersion string
 var defaultConfigName string
 var cfgFile string
 
@@ -41,10 +43,28 @@ var rootCmd = &cobra.Command{
 	Use:   "mbox",
 	Short: "Is a micro gRPC framework",
 	Long: `mBox is a micro gRPC framework, distributed systems development for micro services.`,
-  PersistentPreRun: func(cmd *cobra.Command, args []string) {
+  Run: func(cmd *cobra.Command, args []string) {
+  // PersistentPreRun: func(cmd *cobra.Command, args []string) {
+    if BashCompletion {
+      if os.Geteuid() == 0 {
+        bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
+        if runtime.GOOS == "darwin" {
+          bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
+        }
+        fmt.Println("Generate: ", bkFile)
+        cmd.GenBashCompletionFile(bkFile)
+      } else {
+        if runtime.GOOS == "darwin" {
+          fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
+        } else {
+          fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
+        }
+      }
+    }
+  // },
+	// Run: func(cmd *cobra.Command, args []string) {
 
   },
-	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -69,6 +89,24 @@ func init() {
   rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
 
   rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
+  rootCmd.PersistentFlags().StringVar(&ProjectVersion, "ver", "0.0.1", "project version")
+
+  rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
+  // rootCmd.PersistentFlags().Bool("debug", false, "debug mode")
+  // viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+
+  // rootCmd.Flags().StringP("mode", "m", "production", "NODE_ENV=\"production\"")
+  // viper.BindPFlag("NODE_ENV", rootCmd.PersistentFlags().Lookup("mode"))
+
+  rootCmd.PersistentFlags().String("domain", "local", "External domain name")
+  viper.BindPFlag("domain", rootCmd.PersistentFlags().Lookup("domain"))
+  rootCmd.PersistentFlags().String("name", "", "Service Name (default project name)")
+  viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
+  rootCmd.PersistentFlags().String("namespace", "", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
+  viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
+  rootCmd.PersistentFlags().Int64P("port", "p", 7000, "")
+  rootCmd.PersistentFlags().Bool("proxy", false,  "")
+  rootCmd.PersistentFlags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
 
 
   viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
@@ -102,14 +140,14 @@ func initConfig() {
 
   // If a config file is found, read it in.
   if err := viper.ReadInConfig(); err == nil {
-    if Verbose {
+    if Verbose > 0 {
       fmt.Println("Using config file:", viper.ConfigFileUsed())
     }
 
     // uncomment to watch changed config file
     viper.WatchConfig()
     viper.OnConfigChange(func(e fsnotify.Event) {
-      if Verbose {
+      if Verbose > 0 {
         fmt.Println("Config file changed:", e.Name)
       }
     })
