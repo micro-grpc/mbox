@@ -1,0 +1,72 @@
+{{comment .copyright}}
+{{if .license}}{{comment .license}}{{end}}
+
+package cmd
+
+import (
+	"fmt"
+	"github.com/micro-grpc/mbox/lib"
+	"github.com/prometheus/common/log"
+	"github.com/spf13/viper"
+)
+
+// GetIP - ip address micro service
+//  default --address="" ip from external interface
+// --address=0 all interface
+// --address=8.8.8.8 only IP
+func GetIP() (ip string, addr string) {
+	ip = viper.GetString("address")
+	addr = viper.GetString("address")
+	if len(ip) == 0 {
+		ip = lib.ResolveHostIp()
+		addr = lib.ResolveHostIp()
+	} else if ip == "0" || ip == "0.0.0.0" {
+		ip = lib.ResolveHostIp()
+		addr = ""
+	}
+	return ip, addr
+}
+
+func GetPort(ip string) (port int) {
+	var err error
+	startPort := viper.GetInt("port")
+	endPort := startPort + 999
+	port, err = lib.GetFreePort(ip, startPort, endPort)
+	if err != nil {
+		log.Errorln(err.Error())
+	}
+	return port
+}
+
+// isProduction - true is NODE_ENV=production
+func isProduction() bool {
+	m := viper.GetString("mode")
+	if m == "prod" || m == "production" {
+		return true
+	}
+	return false
+}
+
+// isDeveloper - is development mode
+func isDeveloper() bool {
+	m := viper.GetString("mode")
+	if m == "prod" || m == "production" {
+		return false
+	}
+	return true
+}
+
+func isDebug() bool {
+	return viper.GetBool("debug")
+}
+
+func GetServiceName() string {
+	if len(viper.GetString("namespace")) > 0 && !viper.GetBool("consul") {
+		return fmt.Sprintf("%s-%s", viper.GetString("namespace"), viper.GetString("name"))
+	}
+	return viper.GetString("name")
+}
+
+func GetServiceID() string {
+	return ""
+}

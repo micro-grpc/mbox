@@ -1,0 +1,63 @@
+package handler
+
+import (
+  "github.com/micro-grpc/ping/pb/ping"
+  "golang.org/x/net/context"
+  log "github.com/sirupsen/logrus"
+  "google.golang.org/grpc/metadata"
+  "google.golang.org/grpc"
+  "fmt"
+  "github.com/micro-grpc/mbox/services/authorize"
+)
+// ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+
+type PingService struct {
+  Debug bool
+  Version string
+  Data string
+  ping.PingServiceServer
+}
+
+func NewPingService() *PingService {
+  s := &PingService{}
+  return s
+}
+
+func (s *PingService) Register(srv *grpc.Server)  {
+  ping.RegisterPingServiceServer(srv, s)
+}
+
+func (s *PingService) PingPong(ctx context.Context, in *ping.PingMessage) (res *ping.PingMessage, err error)  {
+  log.Println("Receive message", in.GetPong(), "debug:", s.Debug)
+
+  header := metadata.Pairs("ver", s.Version)
+  grpc.SendHeader(ctx, header)
+
+  trailer := metadata.Pairs("mes", "передается в конце")
+  grpc.SetTrailer(ctx, trailer)
+
+  if len(s.Data) == 0 {
+    s.Data = "pong"
+  }
+
+  if user, ok := authorize.GetUser(ctx); ok {
+    log.Println("USER:", user)
+  }
+  if organization, ok := authorize.GetTokenParams(ctx, "organization"); ok {
+    organizationID, _ := authorize.GetTokenParams(ctx, "organization_id")
+    log.Println("organization ID:", organizationID, "name:", organization)
+  }
+  if olala, ok := ctx.Value("olala").(string); ok {
+    fmt.Println("olala:", olala)
+  }
+
+
+  return &ping.PingMessage{Pong: s.Data}, nil
+}
+
+func (s *PingService) PingPanic(ctx context.Context, in *ping.SaveResponse) (res *ping.PingMessage, err error)  {
+  pn := 10 / in.Id
+  res = &ping.PingMessage{Pong: fmt.Sprintf("%d", pn)}
+  return res, err
+}
+

@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package mbox.authorize;
+
+message AuthorizeRequest {
+    string token = 1;
+    string secret = 2;
+    bool security = 3;
+}
+message AuthorizeBasic {
+    string token = 1;
+    string secret = 2;
+    bool security = 3;
+}
+
+// message Claims {
+//     map<string, string> claim = 1;
+// }
+
+message Param {
+    string name = 1;
+    string value = 2;
+}
+message AuthorizeResponse {
+    string user_id = 1;
+    string user = 2;
+    repeated Param params = 3;
+    string prefix = 4;
+    // repeated Claims claims = 3;
+}
+
+service AuthorizeService {
+    rpc ParseToken (AuthorizeRequest) returns (AuthorizeResponse);
+    rpc ParseBasic (AuthorizeBasic) returns (AuthorizeResponse);
+}

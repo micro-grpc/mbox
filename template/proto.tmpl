@@ -1,0 +1,19 @@
+syntax = "proto3";
+// option go_package = "{{ .ProjectDir }}/pb/{{ .PackageName }}";
+package {{ .PackageName }};
+
+import "github.com/mwitkow/go-proto-validators/validator.proto";
+
+message Request {
+  string id = 1;
+  string pong = 1 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
+}
+
+message Response {
+  string id = 1;
+  string pong = 1 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
+}
+
+service {{ .RelativeName }}Service  {
+  rpc {{ .RelativeName }} (Request) returns (Response) {}
+}

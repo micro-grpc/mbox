@@ -1,0 +1,419 @@
+{{comment .copyright}}
+{{if .license}}{{comment .license}}{{end}}
+
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"runtime"
+
+	ctxhttp "context"
+	"github.com/766b/chi-prometheus"
+	"github.com/fsnotify/fsnotify"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	consulapi "github.com/hashicorp/consul/api"
+	l "github.com/micro-grpc/mbox/log"
+	"github.com/micro-grpc/mbox/middlewares"
+	"github.com/micro-grpc/mbox/server"
+	"github.com/micro-grpc/mbox/services/authorize"
+	"github.com/micro-grpc/ping/handler"
+	"github.com/mitchellh/go-homedir"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
+	"github.com/soheilhy/cmux"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"net"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+// "github.com/sebest/logrusly"
+
+// var LoggerHook *logrusly.LogglyHook
+var Logger *log.Logger
+var Consul *consulapi.Client
+var AuthorizerService *authorize.Authorize
+
+var ServiceID string
+var Verbose int
+var BashCompletion bool
+var ReleaseVersion string
+var defaultConfigName string
+var ConsulService bool
+var Mode string
+var IsLogrus bool
+var cfgFile string
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "{{.appName}}",
+	Short: "A brief description of your application",
+	Long: `A longer description that spans multiple lines and likely contains
+examples and usage of using your application. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if BashCompletion {
+			if os.Geteuid() == 0 {
+				bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
+				if runtime.GOOS == "darwin" {
+					bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
+				}
+				fmt.Println("Generate: ", bkFile)
+				cmd.GenBashCompletionFile(bkFile)
+			} else {
+				if runtime.GOOS == "darwin" {
+					fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
+				} else {
+					fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
+				}
+			}
+		}
+	},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		ll := "info"
+		if isProduction() {
+			ll = "error"
+		}
+		if len(viper.GetString("level")) > 0 {
+			ll = viper.GetString("level")
+		}
+		level := l.GetLogLevel(ll)
+		log.SetLevel(level)
+		if IsLogrus {
+			Logger = log.New()
+			Logger.SetLevel(level)
+			if isProduction() {
+				Logger.Formatter = &log.JSONFormatter{
+					// disable, as we set our own
+					DisableTimestamp: true,
+				}
+				// Logger.SetLevel(log.ErrorLevel)
+				// LoggerHook = logrusly.NewLogglyHook(viper.GetString("LOGGLY_TOKEN"), "site name", level, "tag1", "tag2")
+				// Logger.Hooks.Add(LoggerHook)
+			} else {
+				Logger.Formatter = &log.TextFormatter{}
+			}
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		var httpsrv *http.Server
+		var srv *server.Server
+		if Verbose > 0 {
+			fmt.Println("Server start...")
+		}
+
+		serviceName := viper.GetString("name")
+		protocol := "http"
+		debug := viper.GetBool("debug")
+
+		ip, adr := GetIP()
+		port := GetPort(ip)
+		addr := fmt.Sprintf("%s:%d", adr, port)
+
+		if viper.GetBool("prom") {
+			// Create listener
+			lis, err := net.Listen("tcp", addr)
+			if err != nil {
+				log.Fatalln("Listen failed", err.Error())
+				os.Exit(1)
+			}
+
+			tcpmux := cmux.New(lis)
+			httplis := tcpmux.Match(cmux.HTTP1Fast())
+			// grpclis := tcpmux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+			// httplis := tcpmux.Match(cmux.Any())
+			grpclis := tcpmux.Match(cmux.Any())
+			errc := make(chan error, 1)
+
+			// gRPC listener
+			go func() {
+				srv = NewGRPC(ip, port, debug)
+				err := srv.Serve(grpclis)
+				if err != cmux.ErrListenerClosed {
+					errc <- err
+				} else {
+					errc <- nil
+				}
+			}()
+
+			// HTTP listener
+			go func() {
+				httpsrv = NewHTTP(serviceName, addr)
+				if Verbose > 0 {
+					log.Printf("Start http server: %s://%s/\n", protocol, addr)
+				}
+				err := httpsrv.Serve(httplis)
+				if err != cmux.ErrListenerClosed {
+					log.Errorln("httpsrv.Serve", err)
+					errc <- err
+				} else {
+					errc <- nil
+				}
+			}()
+
+			// Start multiplexer
+			go func() { errc <- tcpmux.Serve() }()
+
+			// Wait for Ctrl+C and other signals
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+			go func() {
+				killSignal := <-c
+				switch killSignal {
+				case syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT:
+					log.Println("[killSignal] shutdown signal:", killSignal)
+					srv.UnRegister()
+					// if IsLogrus && isProduction() {
+					//   LoggerHook.Flush()
+					// }
+					go srv.GracefulStop()
+				}
+				<-c
+				errc <- nil
+			}()
+
+			// Wait for completion
+			<-errc
+
+			ctx, cansel := ctxhttp.WithTimeout(ctxhttp.Background(), 5*time.Second)
+			defer cansel()
+			httpsrv.SetKeepAlivesEnabled(false)
+			if err := httpsrv.Shutdown(ctx); err == http.ErrServerClosed {
+				log.Errorf("cannot gracefull shutdown HTTP server %s\n", err.Error())
+			} else {
+				log.Println("stop gracefull HTTP server")
+			}
+		} else {
+			log.Warningln("Start only gRPC server")
+			srv = NewGRPC(ip, port, debug)
+			if err := srv.ListenAndServe(); err == grpc.ErrServerStopped {
+				log.Println("STOP gRPC server")
+				srv.UnRegister()
+				srv.Stop()
+			}
+		}
+		os.Exit(0)
+	},
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute(releaseVersion string) {
+	ReleaseVersion = releaseVersion
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	defaultConfigName = ".{{.appName}}"
+	cobra.OnInitialize(initConfig)
+
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.{{.appName}}.json)")
+	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
+
+	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
+	rootCmd.PersistentFlags().Bool("debug", false, "debug mode")
+
+	rootCmd.Flags().StringP("mode", "m", "production", "NODE_ENV=production")
+
+	rootCmd.PersistentFlags().String("domain", "local", "External domain name")
+	rootCmd.Flags().String("name", "{{.appName}}", "Service Name (default project name)")
+	rootCmd.Flags().String("namespace", "{{.namespace}}", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
+	rootCmd.Flags().String("address", "{{.address}}", "gRPC Server IP address")
+	rootCmd.Flags().Int64P("port", "p", {{.port}}, "gRPC Server Port")
+	rootCmd.Flags().Bool("proxy", false, "gRPC to JSON proxy")
+	rootCmd.Flags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
+
+	rootCmd.Flags().BoolP("prom", "", false, "support Prometheus")
+	rootCmd.Flags().BoolP("noValidate", "", false, "is not validation gRPC")
+	rootCmd.Flags().BoolP("extract", "", false, "extract on code-generated functions that export log fields from requests.")
+	rootCmd.Flags().StringSliceP("params", "", []string{}, "Other Params from JWT token")
+
+	rootCmd.Flags().BoolP("auth", "", false, "support Authenticate")
+	rootCmd.Flags().BoolVar(&ConsulService, "consul", true, "consul service discovery")
+	rootCmd.Flags().StringP("level", "", "", "logged level")
+	rootCmd.Flags().BoolVarP(&IsLogrus, "logrus", "", false, "Logrus is a structured logger")
+
+	viper.BindPFlag("domain", rootCmd.PersistentFlags().Lookup("domain"))
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	viper.BindPFlag("NODE_ENV", rootCmd.Flags().Lookup("mode"))
+	viper.BindPFlag("name", rootCmd.Flags().Lookup("name"))
+	viper.BindPFlag("namespace", rootCmd.Flags().Lookup("namespace"))
+	viper.BindPFlag("port", rootCmd.Flags().Lookup("port"))
+	viper.BindPFlag("proxy", rootCmd.Flags().Lookup("proxy"))
+	viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
+
+	viper.BindPFlag("prom", rootCmd.Flags().Lookup("prom"))
+	viper.BindPFlag("noValidate", rootCmd.Flags().Lookup("noValidate"))
+	viper.BindPFlag("extract", rootCmd.Flags().Lookup("extract"))
+	viper.BindPFlag("params", rootCmd.Flags().Lookup("params"))
+
+	viper.BindPFlag("auth", rootCmd.Flags().Lookup("auth"))
+	viper.BindPFlag("level", rootCmd.Flags().Lookup("level"))
+	viper.SetDefault("description", "")
+
+	viper.SetDefault("secret", "")
+	viper.SetDefault("CONSUL_HTTP_ADDR", "127.0.0.1:8500")
+	viper.SetDefault("LOGGLY_TOKEN", "")
+}
+
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.AddConfigPath("$HOME")
+		viper.AddConfigPath(".")
+		viper.SetConfigFile(cfgFile)
+
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
+		viper.SetConfigName(defaultConfigName)
+	}
+
+	viper.AutomaticEnv() // read in environment variables that match
+
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		if Verbose > 1 {
+			fmt.Println("Using config file:", viper.ConfigFileUsed())
+		}
+
+		// uncomment to watch changed config file
+		viper.WatchConfig()
+		viper.OnConfigChange(func(e fsnotify.Event) {
+			if Verbose > 0 {
+				fmt.Println("Config file changed:", e.Name)
+			}
+		})
+	}
+}
+
+// NewGRPC - Start gRPC server
+func NewGRPC(ip string, port int, debug bool) *server.Server {
+	var opts []server.ServerOption
+
+	opts = append(opts, server.SetDomain(viper.GetString("domain")))
+	opts = append(opts, server.SetDescription(viper.GetString("description")))
+	opts = append(opts, server.SetSetting(Verbose, debug, viper.GetBool("prom")))
+
+	if IsLogrus {
+		opts = append(opts, server.SetLogger(Logger))
+		opts = append(opts, server.SetExtract())
+	}
+
+	opts = append(opts, server.SetConsul(ConsulService, viper.GetString("CONSUL_HTTP_ADDR"), time.Second*10, 15))
+
+	if viper.GetBool("auth") {
+		AuthorizerService = authorize.NewAuthorize(viper.GetString("secret"), false, Check, CheckBasic)
+		claims := viper.GetStringSlice("params")
+		if len(claims) > 0 {
+			AuthorizerService.Params = claims
+		}
+		opts = append(opts, server.SetAuth(AuthorizerService))
+	}
+
+	// Custom middlewares
+	opts = append(opts, server.Use(ExampleMiddleware))
+
+	name := viper.GetString("name")
+	namespace := viper.GetString("namespace")
+	srv := server.NewServer(name, namespace, ip, port, opts...)
+
+	// micro service logic
+	sp := handler.PingService{Debug: isDebug(), Version: ReleaseVersion}
+	sp.Register(srv.Conn)
+
+	return srv
+}
+
+// NewHTTP - Start HTTP server
+func NewHTTP(serviceName string, addr string) *http.Server {
+	Router := chi.NewRouter()
+	Router.Use(middleware.RequestID)
+	Router.Use(middleware.RealIP)
+
+	if !IsLogrus && isDeveloper() {
+		if Verbose > 0 {
+			fmt.Println("[http] add go-chi middleware.Logger")
+		}
+		Router.Use(middleware.Logger)
+	}
+	if IsLogrus {
+		Router.Use(middlewares.NewStructuredLogger(Logger))
+	}
+	Router.Use(middleware.Recoverer)
+
+	if viper.GetBool("prom") {
+		m := chiprometheus.NewMiddleware(serviceName)
+		Router.Use(m)
+	}
+
+	Router.Use(middlewares.Heartbeat("/ping", "pong"))
+	Router.Use(middlewares.Heartbeat("/healthz", "ok"))
+
+	Router.Use(func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Add("Access-Control-Allow-Origin", "*")
+			handler.ServeHTTP(w, req)
+		})
+	})
+
+	// Router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	time.Sleep(1 * time.Second)
+	// 	w.Write([]byte("welcome"))
+	// })
+
+	if viper.GetBool("prom") {
+		Router.Handle("/metrics", promhttp.Handler())
+	}
+
+	httpsrv := &http.Server{Addr: addr, Handler: Router}
+	return httpsrv
+}
+
+// Check - function in which you can additionally check your TOKEN
+func Check(token string) error {
+	if token == "disable token" {
+		return fmt.Errorf("this token is disabled")
+	}
+	return nil
+}
+
+// CheckBasic - function in which you can additionally check your Basic Auth
+func CheckBasic(username, password string) error {
+	if password == "disabled" {
+		return fmt.Errorf("this user %s is disabled", username)
+	}
+	return nil
+}
+
+// ExampleMiddleware
+func ExampleMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if user, ok := authorize.GetUser(ctx); ok {
+		if user == "oleg" {
+			newCtx := context.WithValue(ctx, "olala", user)
+			return handler(newCtx, req)
+		}
+	}
+	return handler(ctx, req)
+}

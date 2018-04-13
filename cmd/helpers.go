@@ -22,6 +22,7 @@ import (
   "path/filepath"
   "strings"
   "text/template"
+  "io/ioutil"
 )
 
 var srcPaths []string
@@ -50,7 +51,7 @@ func init() {
     toolchainGoPath := strings.TrimSpace(string(out))
     goPaths = filepath.SplitList(toolchainGoPath)
     if len(goPaths) == 0 {
-      er("$GOPATH is not set")
+      er(fmt.Errorf("$GOPATH is not set\n"))
     }
   }
   srcPaths = make([]string, 0, len(goPaths))
@@ -59,27 +60,20 @@ func init() {
   }
 }
 
-func er(msg interface{}) {
-  fmt.Println("Error:", msg)
-  os.Exit(1)
-}
+
 
 // isEmpty checks if a given path is empty.
 // Hidden files in path are ignored.
 func isEmpty(path string) bool {
   fi, err := os.Stat(path)
-  if err != nil {
-    er(err)
-  }
+  er(err)
 
   if !fi.IsDir() {
     return fi.Size() == 0
   }
 
   f, err := os.Open(path)
-  if err != nil {
-    er(err)
-  }
+  er(err)
   defer f.Close()
 
   names, err := f.Readdirnames(-1)
@@ -108,6 +102,14 @@ func exists(path string) bool {
     er(err)
   }
   return false
+}
+
+func loadTemplate(path string, name string) (string, error) {
+  f, err := ioutil.ReadFile(filepath.Join(path, name))
+  if err != nil {
+    return "", err
+  }
+  return string(f), nil
 }
 
 func executeTemplate(tmplStr string, data interface{}) (string, error) {

@@ -1,0 +1,166 @@
+{{comment .copyright}}
+{{if .license}}{{comment .license}}{{end}}
+
+package cmd
+
+import (
+	"fmt"
+
+	cl "github.com/micro-grpc/mbox/client"
+	l "github.com/micro-grpc/mbox/log"
+	"github.com/micro-grpc/ping/pb/ping"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"golang.org/x/net/context"
+	// "google.golang.org/grpc"
+	// "google.golang.org/grpc/metadata"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"time"
+)
+
+// "github.com/sebest/logrusly"
+
+var Client *cl.Client
+var Ticker *time.Ticker
+
+var repeat int
+
+var clientCmd = &cobra.Command{
+	Use:   "client",
+	Short: "example client for mBox",
+	Long:  `example client for mBox `,
+	Run: func(cmd *cobra.Command, args []string) {
+		level := l.GetLogLevel(viper.GetString("client.level"))
+		log.SetLevel(level)
+
+		if Verbose > 0 {
+			fmt.Println("run client for service:", viper.GetString("service.name"), "log level:", level)
+		}
+
+		if IsLogrus {
+			Logger = log.New()
+			Logger.SetLevel(level)
+			if isProduction() {
+				Logger.Formatter = &log.JSONFormatter{
+					// disable, as we set our own
+					DisableTimestamp: true,
+				}
+				// Logger.SetLevel(log.ErrorLevel)
+				// LoggerHook = logrusly.NewLogglyHook(viper.GetString("LOGGLY_TOKEN"), "bbox.loggly.com", level, "serviceName", "client")
+				// Logger.Hooks.Add(LoggerHook)
+				// LoggerHook.Flush()
+			} else {
+				Logger.Formatter = &log.TextFormatter{}
+			}
+		}
+
+		options := []cl.ClientOption{
+			cl.SetServiceName(viper.GetString("service.name"), viper.GetString("service.namespace"), viper.GetString("client.address"), viper.GetInt("client.port")),
+			cl.SetSetting(Verbose, isDebug(), viper.GetBool("client.prom")),
+			cl.SetConsul(viper.GetBool("client.consul"), viper.GetString("CONSUL_HTTP_ADDR")),
+			// cl.SetTLS(cmd.tls),
+			// cl.SetCAFile(cmd.caFile),
+			// cl.SetMaxRetries(cmd.maxRetries),
+		}
+
+		if IsLogrus {
+			options = append(options, cl.SetLogger(Logger))
+		}
+
+		if viper.GetString("auth.schema") == "basic" {
+			options = append(options, cl.SetAuthBasic(viper.GetString("auth.login"), viper.GetString("auth.passwd")))
+		} else if viper.GetString("auth.schema") == "jwt" || viper.GetString("auth.schema") == "bearer" {
+			if Verbose > 2 {
+				log.Println("TOKEN", viper.GetString("token"))
+			}
+			options = append(options, cl.SetAuthJWT(viper.GetString("token")))
+		}
+
+		var err error
+		Client, err = cl.NewClient(options...)
+
+		if err != nil {
+			log.Fatalf("did not connect: %s", err.Error())
+		}
+		defer Client.Close()
+
+		c := ping.NewPingServiceClient(Client.Conn)
+		ctx := context.Background()
+
+		panic, _ := cmd.LocalFlags().GetInt64("panic")
+		if panic != int64(-1) {
+			res, err := c.PingPanic(ctx, &ping.SaveResponse{Id: panic})
+			if err != nil {
+				log.Errorln(err.Error())
+			} else {
+				log.Println("Response PingPanic:", res.Pong)
+			}
+		}
+
+		cnt := 1
+		Ticker = time.NewTicker(2 * time.Second)
+		for t := range Ticker.C {
+			if repeat > 0 && cnt > repeat {
+				Ticker.Stop()
+				break
+			}
+
+			md := metadata.Pairs(
+				"v", ReleaseVersion,
+			)
+			ctx = metadata.NewOutgoingContext(ctx, md)
+			var header, trailer metadata.MD
+			grpc.Header(&header)
+			grpc.Trailer(&trailer)
+			cnt++
+			data := cmd.Flag("data").Value.String()
+			res, err := c.PingPong(ctx, &ping.PingMessage{Pong: data})
+			if err != nil {
+				log.Errorln(err.Error())
+			} else {
+				log.Printf("Response from server: %s (%v)\n", res.Pong, t)
+			}
+		}
+		defer Ticker.Stop()
+
+		// defer LoggerHook.Flush()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(clientCmd)
+
+	clientCmd.Flags().String("auth", "none", "Authorization scheme (e.g. `basic`, `bearer`)")
+	clientCmd.Flags().String("login", "", "Login for scheme `basic`")
+	clientCmd.Flags().String("passwd", "", "Pasword for scheme `basic`")
+	clientCmd.Flags().String("address", "{{.address}}", "gRPC Server IP address")
+	clientCmd.Flags().IntP("port", "p", {{.port}}, "gRPC Server Port")
+	clientCmd.Flags().Bool("consul", true, "consul service discovery")
+	clientCmd.Flags().BoolP("prom", "", false, "support Prometheus")
+	clientCmd.Flags().String("level", "info", "logged level")
+	clientCmd.Flags().BoolVar(&IsLogrus, "logrus", false, "Logrus is a structured logger")
+	clientCmd.Flags().IntVar(&repeat, "repeat", 0, "number of repetitions if 0 then infinitely")
+
+	clientCmd.Flags().String("name", "{{.appName}}", "Service Name")
+	clientCmd.Flags().String("namespace", "{{.namespace}}", "Namespace for the service")
+	viper.BindPFlag("service.name", clientCmd.Flags().Lookup("name"))
+	viper.BindPFlag("service.namespace", clientCmd.Flags().Lookup("namespace"))
+
+	viper.BindPFlag("auth.schema", clientCmd.Flags().Lookup("auth"))
+	viper.BindPFlag("auth.login", clientCmd.Flags().Lookup("login"))
+	viper.BindPFlag("auth.passwd", clientCmd.Flags().Lookup("passwd"))
+	viper.BindPFlag("client.address", clientCmd.Flags().Lookup("address"))
+	viper.BindPFlag("client.port", clientCmd.Flags().Lookup("port"))
+	viper.BindPFlag("client.prom", clientCmd.Flags().Lookup("prom"))
+	viper.BindPFlag("client.level", clientCmd.Flags().Lookup("level"))
+	viper.BindPFlag("client.consul", clientCmd.Flags().Lookup("consul"))
+
+	viper.SetDefault("CONSUL_HTTP_ADDR", "127.0.0.1:8500")
+	viper.SetDefault("TOKEN", "")
+	viper.SetDefault("LOGGLY_TOKEN", "")
+
+	clientCmd.Flags().Int64("panic", -1, "response panic (10/0)")
+	clientCmd.Flags().String("data", "ping", "send message")
+}

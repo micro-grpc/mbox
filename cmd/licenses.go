@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+  "fmt"
 )
 
 // Licenses contains all possible licenses a user can choose from.
@@ -87,7 +88,7 @@ func copyrightLine() string {
 func findLicense(name string) License {
 	found := matchLicense(name)
 	if found == "" {
-		er("unknown license: " + name)
+		er(fmt.Errorf("unknown license: %s\n", name))
 	}
 	return Licenses[found]
 }

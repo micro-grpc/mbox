@@ -104,9 +104,13 @@ func init() {
   viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
   rootCmd.PersistentFlags().String("namespace", "", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
   viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
-  rootCmd.PersistentFlags().Int64P("port", "p", 7000, "")
-  rootCmd.PersistentFlags().Bool("proxy", false,  "")
+  rootCmd.PersistentFlags().String("address", "", "gRPC Server IP address")
+  rootCmd.PersistentFlags().Int64P("port", "p", 9000, "gRPC Server Port")
+  viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+  rootCmd.PersistentFlags().Bool("proxy", false,  "gRPC to JSON proxy")
+  viper.BindPFlag("proxy", rootCmd.PersistentFlags().Lookup("proxy"))
   rootCmd.PersistentFlags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
+  viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
 
 
   viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
