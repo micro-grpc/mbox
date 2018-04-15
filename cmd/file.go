@@ -47,7 +47,7 @@ func (f *folder) addFile(name, tmpl string) {
 func (f *folder) render(templatePath string, p Project) error {
 	for _, v := range f.files {
 		// t, err := template.New("").Funcs(template.FuncMap{"comment": commentifyString}).ParseFiles(filepath.Join(templatePath, v.Template))
-		fmt.Println("Template:", v.Template)
+		//fmt.Println("Template:", v.Template)
 		tmplStr, err := loadTemplate(templatePath, v.Template)
 		if err != nil {
 			return err

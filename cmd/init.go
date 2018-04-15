@@ -78,9 +78,9 @@ var initCmd = &cobra.Command{
 			color.GreenString("make protoc"),
 			"\n",
 			color.GreenString("make build"),
-			"\n\n",
-			"Add commands to it by running ",
-			"mbox add [cmdname]",
+			//"\n\n",
+			//"Add commands to it by running ",
+			//"mbox add [cmdname]",
 		)
 	},
 }
