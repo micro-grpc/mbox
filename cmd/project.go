@@ -13,6 +13,7 @@ import (
 
 // Project contains name, license and paths to projects.
 type Project struct {
+	AppName      string
 	absPath      string
 	cmdPath      string
 	srcPath      string
@@ -27,7 +28,13 @@ type Project struct {
 	PackageName  string
 	Copyright    string
 	Licenses     string
-  ImportPath string
+	ImportPath   string
+	Address      string
+	Port         int
+	Domain       string
+	NameLicense  string
+	Author       string
+	Fqdn         string
 }
 
 // NewProject returns Project with specified project name.
@@ -63,22 +70,35 @@ func NewProject(projectName string) *Project {
 		p.absPath = filepath.Join(srcPaths[0], projectName)
 	}
 
+	p.Domain = viper.GetString("domain")
 	p.ServiceName = path.Base(p.Name())
 	if len(viper.GetString("name")) > 0 {
 		p.ServiceName = viper.GetString("name")
 	}
 	n := strings.Replace(p.ServiceName, "-", "_", -1)
 
+	if len(viper.GetString("fqdn")) == 0 {
+		p.Fqdn = fmt.Sprintf("%s.service.%s", p.ServiceName, p.Domain)
+	} else {
+		p.Fqdn = viper.GetString("fqdn")
+	}
+
+	p.Address = viper.GetString("address")
+	p.Port = viper.GetInt("port")
+	p.Namespace = viper.GetString("namespace")
 	p.RelativeName = snaker.SnakeToCamel(n)
 	p.PackageName = snaker.CamelToSnake(n)
 	p.ProjectDir = path.Join(path.Dir(p.Name()), filepath.Base(p.Name()))
-  p.ImportPath = path.Join(p.Name(), filepath.Base(p.CmdPath()))
+	p.ImportPath = path.Join(p.Name(), filepath.Base(p.CmdPath()))
+	p.AppName = path.Base(p.Name())
 
-  fmt.Println("name:", p.name, "RelativeName:", p.RelativeName, "ServiceName:", p.ServiceName, "PackageName:", p.PackageName)
-	fmt.Println("absPath:", p.absPath, "ProjectDir:", p.ProjectDir)
-  fmt.Println("ImportPath:", p.ImportPath)
+	if viper.GetInt("verbose") > 0 {
+		fmt.Println("name:", p.name, "RelativeName:", p.RelativeName, "ServiceName:", p.ServiceName, "PackageName:", p.PackageName)
+		fmt.Println("absPath:", p.absPath, "ProjectDir:", p.ProjectDir)
+		fmt.Println("ImportPath:", p.ImportPath)
+	}
 
-  f := folder{Name: p.RelativeName, AbsPath: p.absPath}
+	f := folder{Name: p.RelativeName, AbsPath: p.absPath}
 	p.Folder = f
 
 	return p

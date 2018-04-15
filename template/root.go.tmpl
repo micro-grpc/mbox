@@ -1,5 +1,6 @@
-{{comment .copyright}}
-{{if .license}}{{comment .license}}{{end}}
+// Package cmd - {{ .RelativeName }} service cli
+{{ comment .Copyright }}
+{{if .Licenses}}{{ comment .Licenses }}{{end}}
 
 package cmd
 
@@ -18,7 +19,7 @@ import (
 	"github.com/micro-grpc/mbox/middlewares"
 	"github.com/micro-grpc/mbox/server"
 	"github.com/micro-grpc/mbox/services/authorize"
-	"github.com/micro-grpc/ping/handler"
+	"{{ .ProjectDir }}/handler"
 	"github.com/mitchellh/go-homedir"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -53,14 +54,9 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "{{.appName}}",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "{{ .AppName }}",
+	Short: "Server for {{ .ServiceName }} service",
+	Long: `Server for {{ .ServiceName }} service.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if BashCompletion {
 			if os.Geteuid() == 0 {
@@ -217,10 +213,10 @@ func Execute(releaseVersion string) {
 }
 
 func init() {
-	defaultConfigName = ".{{.appName}}"
+	defaultConfigName = ".{{ .AppName }}"
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.{{.appName}}.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.{{ .AppName }}.json)")
 	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
 
 	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
@@ -228,13 +224,13 @@ func init() {
 
 	rootCmd.Flags().StringP("mode", "m", "production", "NODE_ENV=production")
 
-	rootCmd.PersistentFlags().String("domain", "local", "External domain name")
-	rootCmd.Flags().String("name", "{{.appName}}", "Service Name (default project name)")
-	rootCmd.Flags().String("namespace", "{{.namespace}}", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
-	rootCmd.Flags().String("address", "{{.address}}", "gRPC Server IP address")
-	rootCmd.Flags().Int64P("port", "p", {{.port}}, "gRPC Server Port")
+	rootCmd.PersistentFlags().String("domain", "{{ .Domain }}", "External domain name")
+	rootCmd.Flags().String("name", "{{ .ServiceName }}", "Service Name")
+	rootCmd.Flags().String("namespace", "{{ .Namespace }}", "Namespace for the service")
+	rootCmd.Flags().String("address", "{{ .Address }}", "gRPC Server IP address")
+	rootCmd.Flags().Int64P("port", "p", {{ .Port }}, "gRPC Server Port")
 	rootCmd.Flags().Bool("proxy", false, "gRPC to JSON proxy")
-	rootCmd.Flags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
+	rootCmd.Flags().String("fqdn", "{{ .Fqdn }}", "FQDN of service")
 
 	rootCmd.Flags().BoolP("prom", "", false, "support Prometheus")
 	rootCmd.Flags().BoolP("noValidate", "", false, "is not validation gRPC")
@@ -333,14 +329,14 @@ func NewGRPC(ip string, port int, debug bool) *server.Server {
 	}
 
 	// Custom middlewares
-	opts = append(opts, server.Use(ExampleMiddleware))
+	// opts = append(opts, server.Use(ExampleMiddleware))
 
 	name := viper.GetString("name")
 	namespace := viper.GetString("namespace")
 	srv := server.NewServer(name, namespace, ip, port, opts...)
 
 	// micro service logic
-	sp := handler.PingService{Debug: isDebug(), Version: ReleaseVersion}
+	sp := handler.{{ .RelativeName }}Service{Debug: isDebug(), Version: ReleaseVersion}
 	sp.Register(srv.Conn)
 
 	return srv

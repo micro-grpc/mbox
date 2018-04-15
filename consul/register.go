@@ -2,8 +2,8 @@ package consul
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	consulapi "github.com/hashicorp/consul/api"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,31 +11,30 @@ import (
 )
 
 func UnRegister(name string, host string, port int, target string, verbose int) {
-  serviceID := fmt.Sprintf("%s:%s:%d", name, host, port)
+	serviceID := fmt.Sprintf("%s:%s:%d", name, host, port)
 
-  if verbose > 2 {
-    log.Println("[START] UnRegister", serviceID)
-  }
+	if verbose > 2 {
+		log.Println("[START] UnRegister", serviceID)
+	}
 
-  conf := consulapi.DefaultConfig()
-  conf.Address = target
+	conf := consulapi.DefaultConfig()
+	conf.Address = target
 
-  client, err := consulapi.NewClient(conf)
-  if err != nil {
-    log.Errorf("[UnRegister] create consul client error: %v", err.Error())
-  }
+	client, err := consulapi.NewClient(conf)
+	if err != nil {
+		log.Errorf("[UnRegister] create consul client error: %v", err.Error())
+	}
 
+	err = client.Agent().ServiceDeregister(serviceID)
+	if err != nil {
+		log.Errorf("[UnRegister] deregister service '%s' error: %v\n", serviceID, err.Error())
+	} else if verbose > 0 {
+		log.Printf("[UnRegister] deregistered service '%s' from consul server.\n", serviceID)
+	}
 
-  err = client.Agent().ServiceDeregister(serviceID)
-  if err != nil {
-    log.Errorf("[UnRegister] deregister service '%s' error: %v\n", serviceID, err.Error())
-  } else if verbose > 0 {
-    log.Printf("[UnRegister] deregistered service '%s' from consul server.\n", serviceID)
-  }
-
-  if err := client.Agent().CheckDeregister(serviceID); err != nil {
-    log.Errorf("[UnRegister] deregister check '%s' error: %v\n", serviceID, err.Error())
-  }
+	if err := client.Agent().CheckDeregister(serviceID); err != nil {
+		log.Errorf("[UnRegister] deregister check '%s' error: %v\n", serviceID, err.Error())
+	}
 }
 
 // Register is the helper function to self-register service into Etcd/Consul server
@@ -61,28 +60,28 @@ func Register(name string, namespace string, host string, port int, target strin
 
 	// de-register if meet signhup
 	if unregister {
-    go func() {
-      ch := make(chan os.Signal, 1)
-      signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
-      x := <-ch
-      if verbose > 2 {
-        log.Println("[consul] micro-grpc: receive signal: ", x)
-      }
+		go func() {
+			ch := make(chan os.Signal, 1)
+			signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+			x := <-ch
+			if verbose > 2 {
+				log.Println("[consul] micro-grpc: receive signal: ", x)
+			}
 
-      err := client.Agent().ServiceDeregister(serviceID)
-      if err != nil {
-        log.Errorf("[Register] deregister service '%s' error: %v\n", serviceID, err.Error())
-      } else if verbose > 0 {
-        log.Printf("[Register] deregistered service '%s' from consul server.\n", serviceID)
-      }
+			err := client.Agent().ServiceDeregister(serviceID)
+			if err != nil {
+				log.Errorf("[Register] deregister service '%s' error: %v\n", serviceID, err.Error())
+			} else if verbose > 0 {
+				log.Printf("[Register] deregistered service '%s' from consul server.\n", serviceID)
+			}
 
-      if err := client.Agent().CheckDeregister(serviceID); err != nil {
-        log.Errorf("[Register] deregister check '%s' error: %v\n", serviceID, err.Error())
-      }
-      // s, _ := strconv.Atoi(fmt.Sprintf("%d", x))
-      // os.Exit(s)
-    }()
-  }
+			if err := client.Agent().CheckDeregister(serviceID); err != nil {
+				log.Errorf("[Register] deregister check '%s' error: %v\n", serviceID, err.Error())
+			}
+			// s, _ := strconv.Atoi(fmt.Sprintf("%d", x))
+			// os.Exit(s)
+		}()
+	}
 
 	// routine to update ttl
 	go func() {
@@ -92,7 +91,7 @@ func Register(name string, namespace string, host string, port int, target strin
 			err := client.Agent().UpdateTTL(serviceID, "", "passing")
 			if err != nil {
 				log.Errorln("[Register] update ttl of service error: ", err.Error())
-      }
+			}
 		}
 	}()
 
@@ -104,8 +103,8 @@ func Register(name string, namespace string, host string, port int, target strin
 		Port:    port,
 	}
 	if len(namespace) > 0 {
-	  regis.Tags = []string{namespace}
-  }
+		regis.Tags = []string{namespace}
+	}
 	err = client.Agent().ServiceRegister(regis)
 	if err != nil {
 		return fmt.Errorf("[Register] initial register service '%s' host to consul error: %s", name, err.Error())
@@ -126,8 +125,8 @@ func Register(name string, namespace string, host string, port int, target strin
 	if verbose > 1 {
 		log.Printf("Register service '%s' OK!\n", serviceID)
 		if len(namespace) > 0 {
-      log.Printf("Register service '%s' tag: %s OK!\n", serviceID, namespace)
-    }
+			log.Printf("Register service '%s' tag: %s OK!\n", serviceID, namespace)
+		}
 	}
 	return nil
 }

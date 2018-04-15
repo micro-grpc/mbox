@@ -1,24 +1,24 @@
 package client
 
 import (
-  "context"
-  "fmt"
+	"context"
+	"fmt"
 )
 
 type TokenAuth struct {
-  Token string
-  Security bool
-  Schema string
+	Token    string
+	Security bool
+	Schema   string
 }
 
 func (t *TokenAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-  return map[string]string{
-    "authorization": fmt.Sprintf("%s %s", t.Schema, t.Token),
-  }, nil
+	return map[string]string{
+		"authorization": fmt.Sprintf("%s %s", t.Schema, t.Token),
+	}, nil
 }
 
 func (t *TokenAuth) RequireTransportSecurity() bool {
-  return t.Security
+	return t.Security
 }
 
 // fakeOAuth2TokenSource implements a fake oauth2.TokenSource for the purpose of credentials test.

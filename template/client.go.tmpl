@@ -1,5 +1,6 @@
-{{comment .copyright}}
-{{if .license}}{{comment .license}}{{end}}
+// Package cmd - {{ .RelativeName }} service cli
+{{ comment .Copyright }}
+{{if .Licenses}}{{ comment .Licenses }}{{end}}
 
 package cmd
 
@@ -8,7 +9,7 @@ import (
 
 	cl "github.com/micro-grpc/mbox/client"
 	l "github.com/micro-grpc/mbox/log"
-	"github.com/micro-grpc/ping/pb/ping"
+  "{{ .ProjectDir }}/pb/{{ .PackageName }}"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,8 +30,8 @@ var repeat int
 
 var clientCmd = &cobra.Command{
 	Use:   "client",
-	Short: "example client for mBox",
-	Long:  `example client for mBox `,
+	Short: "client for {{ .ServiceName }}",
+	Long:  `client for {{ .ServiceName }} `,
 	Run: func(cmd *cobra.Command, args []string) {
 		level := l.GetLogLevel(viper.GetString("client.level"))
 		log.SetLevel(level)
@@ -86,18 +87,9 @@ var clientCmd = &cobra.Command{
 		}
 		defer Client.Close()
 
-		c := ping.NewPingServiceClient(Client.Conn)
-		ctx := context.Background()
 
-		panic, _ := cmd.LocalFlags().GetInt64("panic")
-		if panic != int64(-1) {
-			res, err := c.PingPanic(ctx, &ping.SaveResponse{Id: panic})
-			if err != nil {
-				log.Errorln(err.Error())
-			} else {
-				log.Println("Response PingPanic:", res.Pong)
-			}
-		}
+		c := {{ .PackageName }}.New{{ .RelativeName }}ServiceClient(Client.Conn)
+		ctx := context.Background()
 
 		cnt := 1
 		Ticker = time.NewTicker(2 * time.Second)
@@ -116,7 +108,7 @@ var clientCmd = &cobra.Command{
 			grpc.Trailer(&trailer)
 			cnt++
 			data := cmd.Flag("data").Value.String()
-			res, err := c.PingPong(ctx, &ping.PingMessage{Pong: data})
+			res, err := c.{{ .RelativeName }}(ctx, &{{ .PackageName }}.Request{Pong: data})
 			if err != nil {
 				log.Errorln(err.Error())
 			} else {
@@ -135,16 +127,16 @@ func init() {
 	clientCmd.Flags().String("auth", "none", "Authorization scheme (e.g. `basic`, `bearer`)")
 	clientCmd.Flags().String("login", "", "Login for scheme `basic`")
 	clientCmd.Flags().String("passwd", "", "Pasword for scheme `basic`")
-	clientCmd.Flags().String("address", "{{.address}}", "gRPC Server IP address")
-	clientCmd.Flags().IntP("port", "p", {{.port}}, "gRPC Server Port")
+	clientCmd.Flags().String("address", "{{ .Address }}", "gRPC Server IP address")
+	clientCmd.Flags().IntP("port", "p", {{ .Port }}, "gRPC Server Port")
 	clientCmd.Flags().Bool("consul", true, "consul service discovery")
 	clientCmd.Flags().BoolP("prom", "", false, "support Prometheus")
 	clientCmd.Flags().String("level", "info", "logged level")
 	clientCmd.Flags().BoolVar(&IsLogrus, "logrus", false, "Logrus is a structured logger")
 	clientCmd.Flags().IntVar(&repeat, "repeat", 0, "number of repetitions if 0 then infinitely")
 
-	clientCmd.Flags().String("name", "{{.appName}}", "Service Name")
-	clientCmd.Flags().String("namespace", "{{.namespace}}", "Namespace for the service")
+	clientCmd.Flags().String("name", "{{ .ServiceName }}", "Service Name")
+	clientCmd.Flags().String("namespace", "{{ .Namespace }}", "Namespace for the service")
 	viper.BindPFlag("service.name", clientCmd.Flags().Lookup("name"))
 	viper.BindPFlag("service.namespace", clientCmd.Flags().Lookup("namespace"))
 
@@ -161,6 +153,5 @@ func init() {
 	viper.SetDefault("TOKEN", "")
 	viper.SetDefault("LOGGLY_TOKEN", "")
 
-	clientCmd.Flags().Int64("panic", -1, "response panic (10/0)")
 	clientCmd.Flags().String("data", "ping", "send message")
 }

@@ -319,7 +319,7 @@ func (s *Server) ListenAndServe() error {
 		log.Fatalln(err.Error())
 	} else {
 		if s.verbose > 2 {
-			log.Println("start register")
+			log.Printf("start server: %v\n", s.Addr)
 		}
 		s.Register(true)
 	}

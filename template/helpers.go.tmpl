@@ -1,5 +1,6 @@
-{{comment .copyright}}
-{{if .license}}{{comment .license}}{{end}}
+// Package cmd - {{ .RelativeName }} service cli
+{{ comment .Copyright }}
+{{if .Licenses}}{{ comment .Licenses }}{{end}}
 
 package cmd
 
@@ -27,6 +28,7 @@ func GetIP() (ip string, addr string) {
 	return ip, addr
 }
 
+// GetPort - return free port
 func GetPort(ip string) (port int) {
 	var err error
 	startPort := viper.GetInt("port")
@@ -60,6 +62,7 @@ func isDebug() bool {
 	return viper.GetBool("debug")
 }
 
+// GetServiceName - return service name
 func GetServiceName() string {
 	if len(viper.GetString("namespace")) > 0 && !viper.GetBool("consul") {
 		return fmt.Sprintf("%s-%s", viper.GetString("namespace"), viper.GetString("name"))
@@ -67,6 +70,7 @@ func GetServiceName() string {
 	return viper.GetString("name")
 }
 
+// GetServiceID - return service ID
 func GetServiceID() string {
 	return ""
 }

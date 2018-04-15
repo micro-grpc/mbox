@@ -6,12 +6,12 @@ import "github.com/mwitkow/go-proto-validators/validator.proto";
 
 message Request {
   string id = 1;
-  string pong = 1 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
+  string pong = 2 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
 }
 
 message Response {
   string id = 1;
-  string pong = 1 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
+  string pong = 2 [(validator.field) = {regex: "^[a-z]{2,5}$"}];
 }
 
 service {{ .RelativeName }}Service  {

@@ -1,7 +1,11 @@
+// Package handler - {{ .RelativeName }} service handler
+{{ comment .Copyright }}
+{{if .Licenses}}{{ comment .Licenses }}{{end}}
+
 package handler
 
 import (
-  "github.com/micro-grpc/ping/pb/ping"
+  "{{ .ProjectDir }}/pb/{{ .PackageName }}"
   "golang.org/x/net/context"
   log "github.com/sirupsen/logrus"
   "google.golang.org/grpc/metadata"
@@ -11,29 +15,33 @@ import (
 )
 // ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
-type PingService struct {
+// {{ .RelativeName }}Service - service structure
+type {{ .RelativeName }}Service struct {
   Debug bool
   Version string
   Data string
-  ping.PingServiceServer
+  {{ .PackageName }}.{{ .RelativeName }}ServiceServer
 }
 
-func NewPingService() *PingService {
-  s := &PingService{}
+// New{{ .RelativeName }}Service - new service
+func New{{ .RelativeName }}Service() *{{ .RelativeName }}Service {
+  s := &{{ .RelativeName }}Service{}
   return s
 }
 
-func (s *PingService) Register(srv *grpc.Server)  {
-  ping.RegisterPingServiceServer(srv, s)
+// Register - register service
+func (s *{{ .RelativeName }}Service) Register(srv *grpc.Server)  {
+  {{ .PackageName }}.Register{{ .RelativeName }}ServiceServer(srv, s)
 }
 
-func (s *PingService) PingPong(ctx context.Context, in *ping.PingMessage) (res *ping.PingMessage, err error)  {
+// {{ .RelativeName }} - function
+func (s *{{ .RelativeName }}Service) {{ .RelativeName }}(ctx context.Context, in *{{ .PackageName }}.Request) (res *{{ .PackageName }}.Response, err error)  {
   log.Println("Receive message", in.GetPong(), "debug:", s.Debug)
 
   header := metadata.Pairs("ver", s.Version)
   grpc.SendHeader(ctx, header)
 
-  trailer := metadata.Pairs("mes", "передается в конце")
+  trailer := metadata.Pairs("mes", "footer message")
   grpc.SetTrailer(ctx, trailer)
 
   if len(s.Data) == 0 {
@@ -51,13 +59,5 @@ func (s *PingService) PingPong(ctx context.Context, in *ping.PingMessage) (res *
     fmt.Println("olala:", olala)
   }
 
-
-  return &ping.PingMessage{Pong: s.Data}, nil
+  return &{{ .PackageName }}.Response{Pong: s.Data}, nil
 }
-
-func (s *PingService) PingPanic(ctx context.Context, in *ping.SaveResponse) (res *ping.PingMessage, err error)  {
-  pn := 10 / in.Id
-  res = &ping.PingMessage{Pong: fmt.Sprintf("%d", pn)}
-  return res, err
-}
-

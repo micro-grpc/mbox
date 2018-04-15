@@ -14,158 +14,155 @@
 package cmd
 
 import (
-  "bytes"
-  "fmt"
-  "io"
-  "os"
-  "os/exec"
-  "path/filepath"
-  "strings"
-  "text/template"
-  "io/ioutil"
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"text/template"
 )
 
 var srcPaths []string
 
 func init() {
-  // Initialize srcPaths.
-  envGoPath := os.Getenv("GOPATH")
-  goPaths := filepath.SplitList(envGoPath)
-  if len(goPaths) == 0 {
-    // Adapted from https://github.com/Masterminds/glide/pull/798/files.
-    // As of Go 1.8 the GOPATH is no longer required to be set. Instead there
-    // is a default value. If there is no GOPATH check for the default value.
-    // Note, checking the GOPATH first to avoid invoking the go toolchain if
-    // possible.
+	// Initialize srcPaths.
+	envGoPath := os.Getenv("GOPATH")
+	goPaths := filepath.SplitList(envGoPath)
+	if len(goPaths) == 0 {
+		// Adapted from https://github.com/Masterminds/glide/pull/798/files.
+		// As of Go 1.8 the GOPATH is no longer required to be set. Instead there
+		// is a default value. If there is no GOPATH check for the default value.
+		// Note, checking the GOPATH first to avoid invoking the go toolchain if
+		// possible.
 
-    goExecutable := os.Getenv("COBRA_GO_EXECUTABLE")
-    if len(goExecutable) <= 0 {
-      goExecutable = "go"
-    }
+		goExecutable := os.Getenv("COBRA_GO_EXECUTABLE")
+		if len(goExecutable) <= 0 {
+			goExecutable = "go"
+		}
 
-    out, err := exec.Command(goExecutable, "env", "GOPATH").Output()
-    if err != nil {
-      er(err)
-    }
+		out, err := exec.Command(goExecutable, "env", "GOPATH").Output()
+		if err != nil {
+			er(err)
+		}
 
-    toolchainGoPath := strings.TrimSpace(string(out))
-    goPaths = filepath.SplitList(toolchainGoPath)
-    if len(goPaths) == 0 {
-      er(fmt.Errorf("$GOPATH is not set\n"))
-    }
-  }
-  srcPaths = make([]string, 0, len(goPaths))
-  for _, goPath := range goPaths {
-    srcPaths = append(srcPaths, filepath.Join(goPath, "src"))
-  }
+		toolchainGoPath := strings.TrimSpace(string(out))
+		goPaths = filepath.SplitList(toolchainGoPath)
+		if len(goPaths) == 0 {
+			er(fmt.Errorf("$GOPATH is not set\n"))
+		}
+	}
+	srcPaths = make([]string, 0, len(goPaths))
+	for _, goPath := range goPaths {
+		srcPaths = append(srcPaths, filepath.Join(goPath, "src"))
+	}
 }
-
-
 
 // isEmpty checks if a given path is empty.
 // Hidden files in path are ignored.
 func isEmpty(path string) bool {
-  fi, err := os.Stat(path)
-  er(err)
+	fi, err := os.Stat(path)
+	er(err)
 
-  if !fi.IsDir() {
-    return fi.Size() == 0
-  }
+	if !fi.IsDir() {
+		return fi.Size() == 0
+	}
 
-  f, err := os.Open(path)
-  er(err)
-  defer f.Close()
+	f, err := os.Open(path)
+	er(err)
+	defer f.Close()
 
-  names, err := f.Readdirnames(-1)
-  if err != nil && err != io.EOF {
-    er(err)
-  }
+	names, err := f.Readdirnames(-1)
+	if err != nil && err != io.EOF {
+		er(err)
+	}
 
-  for _, name := range names {
-    if len(name) > 0 && name[0] != '.' {
-      return false
-    }
-  }
-  return true
+	for _, name := range names {
+		if len(name) > 0 && name[0] != '.' {
+			return false
+		}
+	}
+	return true
 }
 
 // exists checks if a file or directory exists.
 func exists(path string) bool {
-  if path == "" {
-    return false
-  }
-  _, err := os.Stat(path)
-  if err == nil {
-    return true
-  }
-  if !os.IsNotExist(err) {
-    er(err)
-  }
-  return false
+	if path == "" {
+		return false
+	}
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if !os.IsNotExist(err) {
+		er(err)
+	}
+	return false
 }
 
 func loadTemplate(path string, name string) (string, error) {
-  f, err := ioutil.ReadFile(filepath.Join(path, name))
-  if err != nil {
-    return "", err
-  }
-  return string(f), nil
+	f, err := ioutil.ReadFile(filepath.Join(path, name))
+	if err != nil {
+		return "", err
+	}
+	return string(f), nil
 }
 
 func executeTemplate(tmplStr string, data interface{}) (string, error) {
-  tmpl, err := template.New("").Funcs(template.FuncMap{"comment": commentifyString}).Parse(tmplStr)
-  if err != nil {
-    return "", err
-  }
+	tmpl, err := template.New("").Funcs(template.FuncMap{"comment": commentifyString}).Parse(tmplStr)
+	if err != nil {
+		return "", err
+	}
 
-  buf := new(bytes.Buffer)
-  err = tmpl.Execute(buf, data)
-  return buf.String(), err
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, data)
+	return buf.String(), err
 }
 
 func writeStringToFile(path string, s string) error {
-  return writeToFile(path, strings.NewReader(s))
+	return writeToFile(path, strings.NewReader(s))
 }
 
 // writeToFile writes r to file with path only
 // if file/directory on given path doesn't exist.
 func writeToFile(path string, r io.Reader) error {
-  if exists(path) {
-    return fmt.Errorf("%v already exists", path)
-  }
+	if exists(path) {
+		return fmt.Errorf("%v already exists", path)
+	}
 
-  dir := filepath.Dir(path)
-  if dir != "" {
-    if err := os.MkdirAll(dir, 0777); err != nil {
-      return err
-    }
-  }
+	dir := filepath.Dir(path)
+	if dir != "" {
+		if err := os.MkdirAll(dir, 0777); err != nil {
+			return err
+		}
+	}
 
-  file, err := os.Create(path)
-  if err != nil {
-    return err
-  }
-  defer file.Close()
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
-  _, err = io.Copy(file, r)
-  return err
+	_, err = io.Copy(file, r)
+	return err
 }
 
 // commentfyString comments every line of in.
 func commentifyString(in string) string {
-  var newlines []string
-  lines := strings.Split(in, "\n")
-  for _, line := range lines {
-    if strings.HasPrefix(line, "//") {
-      newlines = append(newlines, line)
-    } else {
-      if line == "" {
-        newlines = append(newlines, "//")
-      } else {
-        newlines = append(newlines, "// "+line)
-      }
-    }
-  }
-  return strings.Join(newlines, "\n")
+	var newlines []string
+	lines := strings.Split(in, "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "//") {
+			newlines = append(newlines, line)
+		} else {
+			if line == "" {
+				newlines = append(newlines, "//")
+			} else {
+				newlines = append(newlines, "// "+line)
+			}
+		}
+	}
+	return strings.Join(newlines, "\n")
 }
-

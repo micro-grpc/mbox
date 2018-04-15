@@ -21,20 +21,20 @@
 package main // import "github.com/micro-grpc/mbox"
 
 import (
-  "github.com/micro-grpc/mbox/cmd"
+	"github.com/micro-grpc/mbox/cmd"
 )
 
 var (
-  // RELEASE returns the release version
-  release = "UNKNOWN"
-  // REPO returns the git repository URL
-  Repo = "UNKNOWN"
-  // COMMIT returns the short sha from git
-  Commit = "UNKNOWN"
+	// RELEASE returns the release version
+	release = "UNKNOWN"
+	// REPO returns the git repository URL
+	Repo = "UNKNOWN"
+	// COMMIT returns the short sha from git
+	Commit = "UNKNOWN"
 
-  BuildTime = "UNKNOWN"
+	BuildTime = "UNKNOWN"
 )
 
 func main() {
-  cmd.Execute(release)
+	cmd.Execute(release)
 }

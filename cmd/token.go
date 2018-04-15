@@ -52,7 +52,7 @@ var tokenCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-    tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("secret")), nil)
+		tokenAuth := jwtauth.New("HS256", []byte(viper.GetString("secret")), nil)
 		items := jwtauth.Claims{}
 		if len(args) > 0 {
 			// For debugging/example purposes, we generate and print

@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-  "github.com/fsnotify/fsnotify"
-  "runtime"
+	"runtime"
 )
 
 var Verbose int
@@ -42,118 +42,117 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "mbox",
 	Short: "Is a micro gRPC framework",
-	Long: `mBox is a micro gRPC framework, distributed systems development for micro services.`,
-  Run: func(cmd *cobra.Command, args []string) {
-  // PersistentPreRun: func(cmd *cobra.Command, args []string) {
-    if BashCompletion {
-      if os.Geteuid() == 0 {
-        bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
-        if runtime.GOOS == "darwin" {
-          bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
-        }
-        fmt.Println("Generate: ", bkFile)
-        cmd.GenBashCompletionFile(bkFile)
-      } else {
-        if runtime.GOOS == "darwin" {
-          fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
-        } else {
-          fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
-        }
-      }
-    }
-  // },
-	// Run: func(cmd *cobra.Command, args []string) {
+	Long:  `mBox is a micro gRPC framework, distributed systems development for micro services.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		// PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if BashCompletion {
+			if os.Geteuid() == 0 {
+				bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
+				if runtime.GOOS == "darwin" {
+					bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
+				}
+				fmt.Println("Generate: ", bkFile)
+				cmd.GenBashCompletionFile(bkFile)
+			} else {
+				if runtime.GOOS == "darwin" {
+					fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
+				} else {
+					fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
+				}
+			}
+		}
+		// },
+		// Run: func(cmd *cobra.Command, args []string) {
 
-  },
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(releaseVersion string) {
-  ReleaseVersion = releaseVersion
-  if err := rootCmd.Execute(); err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
+	ReleaseVersion = releaseVersion
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func init() {
-  defaultConfigName = ".mbox"
+	defaultConfigName = ".mbox"
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.mbox.yaml)")
-  rootCmd.PersistentFlags().StringP("author", "a", "YOUR NAME", "author name for copyright attribution")
-  rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
+	rootCmd.PersistentFlags().StringP("author", "a", "YOUR NAME", "author name for copyright attribution")
+	rootCmd.PersistentFlags().Bool("viper", true, "use Viper for configuration")
 
-  rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
-  rootCmd.PersistentFlags().StringVar(&ProjectVersion, "ver", "0.0.1", "project version")
+	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
+	rootCmd.PersistentFlags().StringVar(&ProjectVersion, "ver", "0.0.1", "project version")
 
-  rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
-  // rootCmd.PersistentFlags().Bool("debug", false, "debug mode")
-  // viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
+	// rootCmd.PersistentFlags().Bool("debug", false, "debug mode")
+	// viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 
-  // rootCmd.Flags().StringP("mode", "m", "production", "NODE_ENV=\"production\"")
-  // viper.BindPFlag("NODE_ENV", rootCmd.PersistentFlags().Lookup("mode"))
+	// rootCmd.Flags().StringP("mode", "m", "production", "NODE_ENV=\"production\"")
+	// viper.BindPFlag("NODE_ENV", rootCmd.PersistentFlags().Lookup("mode"))
 
-  rootCmd.PersistentFlags().String("domain", "local", "External domain name")
-  viper.BindPFlag("domain", rootCmd.PersistentFlags().Lookup("domain"))
-  rootCmd.PersistentFlags().String("name", "", "Service Name (default project name)")
-  viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
-  rootCmd.PersistentFlags().String("namespace", "", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
-  viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
-  rootCmd.PersistentFlags().String("address", "", "gRPC Server IP address")
-  rootCmd.PersistentFlags().Int64P("port", "p", 9000, "gRPC Server Port")
-  viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
-  rootCmd.PersistentFlags().Bool("proxy", false,  "gRPC to JSON proxy")
-  viper.BindPFlag("proxy", rootCmd.PersistentFlags().Lookup("proxy"))
-  rootCmd.PersistentFlags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
-  viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
+	rootCmd.PersistentFlags().String("domain", "local", "External domain name")
+	viper.BindPFlag("domain", rootCmd.PersistentFlags().Lookup("domain"))
+	rootCmd.PersistentFlags().String("name", "", "Service Name (default project name)")
+	viper.BindPFlag("name", rootCmd.PersistentFlags().Lookup("name"))
+	rootCmd.PersistentFlags().String("namespace", "", "Namespace for the service") // если указано то будет (namespace-serviceName.service.local)
+	viper.BindPFlag("namespace", rootCmd.PersistentFlags().Lookup("namespace"))
+	rootCmd.PersistentFlags().String("address", "", "gRPC Server IP address")
+	rootCmd.PersistentFlags().Int64P("port", "p", 9000, "gRPC Server Port")
+	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+	rootCmd.PersistentFlags().Bool("proxy", false, "gRPC to JSON proxy")
+	viper.BindPFlag("proxy", rootCmd.PersistentFlags().Lookup("proxy"))
+	rootCmd.PersistentFlags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
+	viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
 
-
-  viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
-  viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
-  viper.SetDefault("author", "NAME HERE <EMAIL ADDRESS>")
-  viper.SetDefault("license", "MIT")
+	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
+	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))
+	viper.SetDefault("author", "NAME HERE <EMAIL ADDRESS>")
+	viper.SetDefault("license", "MIT")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-  if cfgFile != "" {
-    // Use config file from the flag.
-    viper.AddConfigPath("$HOME")
-    viper.AddConfigPath(".")
-    viper.SetConfigFile(cfgFile)
+	if cfgFile != "" {
+		// Use config file from the flag.
+		viper.AddConfigPath("$HOME")
+		viper.AddConfigPath(".")
+		viper.SetConfigFile(cfgFile)
 
-  } else {
-    // Find home directory.
-    home, err := homedir.Dir()
-    if err != nil {
-      fmt.Println(err)
-      os.Exit(1)
-    }
+	} else {
+		// Find home directory.
+		home, err := homedir.Dir()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-    viper.AddConfigPath(home)
-    viper.AddConfigPath(".")
-    viper.SetConfigName(defaultConfigName)
-  }
+		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
+		viper.SetConfigName(defaultConfigName)
+	}
 
-  viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv() // read in environment variables that match
 
-  // If a config file is found, read it in.
-  if err := viper.ReadInConfig(); err == nil {
-    if Verbose > 0 {
-      fmt.Println("Using config file:", viper.ConfigFileUsed())
-    }
+	// If a config file is found, read it in.
+	if err := viper.ReadInConfig(); err == nil {
+		if Verbose > 0 {
+			fmt.Println("Using config file:", viper.ConfigFileUsed())
+		}
 
-    // uncomment to watch changed config file
-    viper.WatchConfig()
-    viper.OnConfigChange(func(e fsnotify.Event) {
-      if Verbose > 0 {
-        fmt.Println("Config file changed:", e.Name)
-      }
-    })
-  }
+		// uncomment to watch changed config file
+		viper.WatchConfig()
+		viper.OnConfigChange(func(e fsnotify.Event) {
+			if Verbose > 0 {
+				fmt.Println("Config file changed:", e.Name)
+			}
+		})
+	}
 }

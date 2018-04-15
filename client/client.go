@@ -291,7 +291,7 @@ func SetSetting(verbose int, debug bool, prom bool) ClientOption {
 func SetServiceName(name string, namespace string, addr string, port int) ClientOption {
 	return func(client *Client) {
 		client.ServiceName = name
-    client.Namespace = namespace
+		client.Namespace = namespace
 		if len(addr) == 0 {
 			ip := lib.ResolveHostIp()
 			client.Addr = fmt.Sprintf("%s:%d", ip, port)

@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
 	"github.com/spf13/viper"
-  "fmt"
 )
 
 // Licenses contains all possible licenses a user can choose from.
