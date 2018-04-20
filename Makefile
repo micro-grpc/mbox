@@ -95,6 +95,7 @@ init:
 	@go get -u golang.org/x/vgo
 	@go get -u google.golang.org/grpc
 	@go get -u github.com/golang/protobuf/proto
+	@go get -u github.com/golang/protobuf/ptypes
 	@go get -u github.com/golang/protobuf/protoc-gen-go
 	@go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators
 
