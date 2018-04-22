@@ -103,6 +103,7 @@ init:
 	@go get -u github.com/fiorix/protoc-gen-cobra
 	@go get -u github.com/infobloxopen/protoc-gen-gorm
 	@go get -u github.com/tcncloud/protoc-gen-persist
+	@go get -v github.com/micro-grpc/protoc-gen-sqlx
 	@#go get -u github.com/zanven42/proto-database-go/protoc-gen-database
 
 update:
