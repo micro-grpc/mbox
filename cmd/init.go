@@ -116,7 +116,7 @@ func initializeProject(project *Project) {
 	//project.NameLicense = project.License().Name
 	project.Author = viper.GetString("author")
 
-	project.Folder.addFile("Makefile", "makefile.tmpl")
+	project.Folder.addFile("Makefile", "Makefile")
 	project.Folder.addFile(fmt.Sprintf(".%s.yaml", project.AppName), "config.yaml.tmpl")
 
 	fh := project.Folder.addFolder("handler")

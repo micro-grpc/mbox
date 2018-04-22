@@ -93,17 +93,17 @@ help:
 	@echo "...............................................................\n"
 
 init:
-  @go get -u github.com/golang/dep/cmd/dep
-  @go get -u golang.org/x/vgo
-  @go get -u google.golang.org/grpc
-  @go get -u github.com/golang/protobuf/proto
-  @go get -u github.com/gogo/protobuf/{proto,protoc-gen-gogo,gogoproto,protoc-gen-gofast}
-  @go get -u github.com/golang/protobuf/protoc-gen-go
-  @go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators
-  @go get -u github.com/fiorix/protoc-gen-cobra
-  @go get -u github.com/infobloxopen/protoc-gen-gorm
-  @go get -u github.com/tcncloud/protoc-gen-persist
-  @#go get -u github.com/zanven42/proto-database-go/protoc-gen-database
+	@go get -u github.com/golang/dep/cmd/dep
+	@go get -u golang.org/x/vgo
+	@go get -u google.golang.org/grpc
+	@go get -u github.com/golang/protobuf/proto
+	@go get -u github.com/gogo/protobuf/{proto,protoc-gen-gogo,gogoproto,protoc-gen-gofast}
+	@go get -u github.com/golang/protobuf/protoc-gen-go
+	@go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators
+	@go get -u github.com/fiorix/protoc-gen-cobra
+	@go get -u github.com/infobloxopen/protoc-gen-gorm
+	@go get -u github.com/tcncloud/protoc-gen-persist
+	@#go get -u github.com/zanven42/proto-database-go/protoc-gen-database
 
 update:
 	@dep ensure -update
@@ -115,7 +115,7 @@ protoc:
 	  -I=. \
     --gofast_out=${MODIFY},plugins=grpc:${PROTO_OUT}  \
 	  --govalidators_out=${MODIFY}:${PROTO_OUT} \
-    --sqlx_out=${MODIFY}:${PROTO_OUT}
+    --sqlx_out=${MODIFY}:${PROTO_OUT} \
     -I=/usr/local/include \
     -I=${GOPATH} \
 	  pb/**/*.proto
