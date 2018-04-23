@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"time"
+  "encoding/json"
 )
 
 // "github.com/sebest/logrusly"
@@ -108,11 +109,13 @@ var clientCmd = &cobra.Command{
 			grpc.Trailer(&trailer)
 			cnt++
 			data := cmd.Flag("data").Value.String()
-			res, err := c.{{ .RelativeName }}(ctx, &{{ .PackageName }}.Request{Pong: data})
+			res, err := c.Read(ctx, &{{ .PackageName }}.Query{Id: data})
 			if err != nil {
 				log.Errorln(err.Error())
 			} else {
-				log.Printf("Response from server: %s (%v)\n", res.Pong, t)
+        var row {{ .PackageName }}.{{ .RelativeName }}
+        json.Unmarshal(res.Data, &row)
+				log.Printf("Response from server: %s (%v)\n", row.Name, t)
 			}
 		}
 		defer Ticker.Stop()
