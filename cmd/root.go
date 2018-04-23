@@ -111,6 +111,12 @@ func init() {
 	viper.BindPFlag("proxy", rootCmd.PersistentFlags().Lookup("proxy"))
 	rootCmd.PersistentFlags().String("fqdn", "", "FQDN of service (defaults to serviceName.service.local)")
 	viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
+  rootCmd.PersistentFlags().Bool("sqlx", false, "support SqlX")
+  viper.BindPFlag("sqlx", rootCmd.PersistentFlags().Lookup("sqlx"))
+  rootCmd.PersistentFlags().Bool("gorm", false, "support GORM ORM")
+  viper.BindPFlag("gorm", rootCmd.PersistentFlags().Lookup("gorm"))
+	rootCmd.PersistentFlags().String("driver", "postgres", "Database driver")
+	viper.BindPFlag("driver", rootCmd.PersistentFlags().Lookup("driver"))
 
 	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))

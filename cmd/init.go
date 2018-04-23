@@ -120,15 +120,20 @@ func initializeProject(project *Project) {
 	project.Folder.addFile(fmt.Sprintf(".%s.yaml", project.AppName), "config.yaml.tmpl")
 
 	fh := project.Folder.addFolder("handler")
-	fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.go.tmpl")
+  if viper.GetBool("sqlx") {
+    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.sqlx.go")
+  } else {
+    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.go.tmpl")
+  }
 
 	fpb := project.Folder.addFolder("pb")
 	fpbi := fpb.addFolder(project.PackageName)
 	fpbi.addFile(fmt.Sprintf("%s.proto", project.PackageName), "proto.tmpl")
 
 	fcmd := project.Folder.addFolder("cmd")
-	fcmd.addFile("helpers.go", "helpers.go.tmpl")
-	fcmd.addFile("client.go", "client.go.tmpl")
+
+  fcmd.addFile("helpers.go", "helpers.go.tmpl")
+  fcmd.addFile("client.go", "client.go.tmpl")
 	fcmd.addFile("root.go", "root.go.tmpl")
 
 	if err := project.write(templatePath); err != nil {

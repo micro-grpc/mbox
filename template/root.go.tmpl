@@ -33,6 +33,11 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+  {{if .IsSQLX }}{{if eq .Driver "postgres"}}_ "github.com/jinzhu/gorm/dialects/postgres"{{end}}
+  "github.com/jmoiron/sqlx"
+  {{end}}
+  {{if .IsGORM }}{{if eq .Driver "postgres"}}_ "github.com/jinzhu/gorm/dialects/postgres"{{end}}
+  "github.com/jinzhu/gorm"{{end}}
 )
 
 // "github.com/sebest/logrusly"
@@ -330,6 +335,9 @@ func NewGRPC(ip string, port int, debug bool) *server.Server {
 
 	// Custom middlewares
 	// opts = append(opts, server.Use(ExampleMiddleware))
+  {{if .IsSQLX }}opts = append(opts, server.Use(DataBaseMiddleware)){{end}}
+  {{if .IsGORM }}opts = append(opts, server.Use(GormMiddleware)){{end}}
+  // opts = append(opts, server.Use(ConnectMiddleware))
 
 	name := viper.GetString("name")
 	namespace := viper.GetString("namespace")
@@ -413,3 +421,58 @@ func ExampleMiddleware(ctx context.Context, req interface{}, info *grpc.UnarySer
 	}
 	return handler(ctx, req)
 }
+{{if .IsSQLX }}
+// DataBaseMiddleware - Middleware connection to database SqlX
+func DataBaseMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+  if user, ok := authorize.GetUser(ctx); ok {
+  conn := viper.GetString(fmt.Sprintf("connects.%s", user))
+  if len(conn) > 0 {
+    db, err := sqlx.Connect("postgres", conn)
+    if err != nil {
+      log.Errorln(err)
+      return handler(ctx, req)
+    }
+
+    //db.Mapper = reflectx.NewMapperFunc("json", func(str string) (string) {
+    //return str
+    //})
+    //db.Unsafe()
+    // TODO возможно придется отключить
+    defer db.Close()
+    newCtx := context.WithValue(ctx, "DB", db)
+    return handler(newCtx, req)
+    } else {
+      log.Errorln("NOT user:", user)
+    }
+  }
+  return handler(ctx, req)
+}
+{{ end }}
+{{if .IsGORM }}
+// GormMiddleware - Middleware connection to database GORM ORM
+func GormMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+  if user, ok := authorize.GetUser(ctx); ok {
+    conn := viper.GetString(fmt.Sprintf("connects.%s", user))
+    if len(conn) > 0 {
+      //log.Warningln(nameConnect)
+      db, err := gorm.Open("postgres", conn)
+      if err != nil {
+        log.Errorln(err)
+        return handler(ctx, req)
+      }
+      debugDB := false
+      if Verbose > 2 {
+        debugDB = true
+      }
+      db.LogMode(debugDB)
+      // TODO возможно придется отключить
+      defer db.Close()
+      newCtx := context.WithValue(ctx, "DB", db)
+      return handler(newCtx, req)
+    } else {
+      log.Errorln("NOT user:", user)
+    }
+  }
+  return handler(ctx, req)
+}
+{{end}}

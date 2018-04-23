@@ -35,6 +35,9 @@ type Project struct {
 	NameLicense  string
 	Author       string
 	Fqdn         string
+	IsSQLX  bool
+	IsGORM bool
+	Driver string
 }
 
 // NewProject returns Project with specified project name.
@@ -69,6 +72,10 @@ func NewProject(projectName string) *Project {
 	if p.absPath == "" {
 		p.absPath = filepath.Join(srcPaths[0], projectName)
 	}
+
+	p.IsSQLX = viper.GetBool("sqlx")
+	p.IsGORM = viper.GetBool("gorm")
+	p.Driver = viper.GetString("driver")
 
 	p.Domain = viper.GetString("domain")
 	p.ServiceName = path.Base(p.Name())
