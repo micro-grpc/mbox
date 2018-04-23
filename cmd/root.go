@@ -117,6 +117,8 @@ func init() {
   viper.BindPFlag("gorm", rootCmd.PersistentFlags().Lookup("gorm"))
 	rootCmd.PersistentFlags().String("driver", "postgres", "Database driver")
 	viper.BindPFlag("driver", rootCmd.PersistentFlags().Lookup("driver"))
+	rootCmd.PersistentFlags().String("cf", "", "Custom config file name")
+	viper.BindPFlag("cf", rootCmd.PersistentFlags().Lookup("cf"))
 
 	viper.BindPFlag("author", rootCmd.PersistentFlags().Lookup("author"))
 	viper.BindPFlag("useViper", rootCmd.PersistentFlags().Lookup("viper"))

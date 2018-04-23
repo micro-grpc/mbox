@@ -38,6 +38,7 @@ type Project struct {
 	IsSQLX  bool
 	IsGORM bool
 	Driver string
+	ConfigFileName string
 }
 
 // NewProject returns Project with specified project name.
@@ -97,6 +98,12 @@ func NewProject(projectName string) *Project {
 	p.PackageName = snaker.CamelToSnake(n)
 	p.ProjectDir = path.Join(path.Dir(p.Name()), filepath.Base(p.Name()))
 	p.ImportPath = path.Join(p.Name(), filepath.Base(p.CmdPath()))
+
+	if len(viper.GetString("cf")) == 0 {
+	  p.ConfigFileName = fmt.Sprintf(".%s", path.Base(p.Name()))
+  } else {
+    p.ConfigFileName = viper.GetString("cf")
+  }
 	p.AppName = path.Base(p.Name())
 
 	if viper.GetInt("verbose") > 0 {

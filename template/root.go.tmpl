@@ -218,10 +218,10 @@ func Execute(releaseVersion string) {
 }
 
 func init() {
-	defaultConfigName = ".{{ .AppName }}"
+	defaultConfigName = "{{ .ConfigFileName }}"
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.{{ .AppName }}.json)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/{{ .ConfigFileName }}.json)")
 	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
 
 	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
