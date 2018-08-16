@@ -50,6 +50,7 @@ var AuthorizerService *authorize.Authorize
 var ServiceID string
 var Verbose int
 var BashCompletion bool
+var DistBuild bool
 var ReleaseVersion string
 var defaultConfigName string
 var ConsulService bool
@@ -63,22 +64,26 @@ var rootCmd = &cobra.Command{
 	Short: "Server for {{ .ServiceName }} service",
 	Long: `Server for {{ .ServiceName }} service.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if BashCompletion {
-			if os.Geteuid() == 0 {
-				bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
-				if runtime.GOOS == "darwin" {
-					bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
-				}
-				fmt.Println("Generate: ", bkFile)
-				cmd.GenBashCompletionFile(bkFile)
-			} else {
-				if runtime.GOOS == "darwin" {
-					fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
-				} else {
-					fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
-				}
-			}
-		}
+    if BashCompletion && DistBuild {
+      bkFile := fmt.Sprintf("./%s.bash", cmd.Use)
+      fmt.Println("Generate: ", bkFile)
+      cmd.GenBashCompletionFile(bkFile)
+    } else if BashCompletion {
+      if os.Geteuid() == 0 {
+        bkFile := fmt.Sprintf("/etc/bash_completion.d/%s.bash", cmd.Use)
+        if runtime.GOOS == "darwin" {
+          bkFile = fmt.Sprintf("/usr/local/etc/bash_completion.d/%s.bash", cmd.Use)
+        }
+        fmt.Println("Generate: ", bkFile)
+        cmd.GenBashCompletionFile(bkFile)
+      } else {
+        if runtime.GOOS == "darwin" {
+          fmt.Printf("RUN sudo ./%s --bash-completion\n", cmd.Use)
+        } else {
+          fmt.Printf("RUN sudo %s --bash-completion\n", cmd.Use)
+        }
+      }
+    }
 	},
 	PreRun: func(cmd *cobra.Command, args []string) {
 		ll := "info"
@@ -107,102 +112,104 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		var httpsrv *http.Server
-		var srv *server.Server
-		if Verbose > 0 {
-			fmt.Println("Server start...")
-		}
+    if !BashCompletion {
+      var httpsrv *http.Server
+		  var srv *server.Server
+		  if Verbose > 0 {
+			  fmt.Println("Server start...")
+		  }
 
-		serviceName := viper.GetString("name")
-		protocol := "http"
-		debug := viper.GetBool("debug")
+		  serviceName := viper.GetString("name")
+		  protocol := "http"
+		  debug := viper.GetBool("debug")
 
-		ip, adr := GetIP()
-		port := GetPort(ip)
-		addr := fmt.Sprintf("%s:%d", adr, port)
+		  ip, adr := GetIP()
+		  port := GetPort(ip)
+		  addr := fmt.Sprintf("%s:%d", adr, port)
 
-		if viper.GetBool("prom") {
-			// Create listener
-			lis, err := net.Listen("tcp", addr)
-			if err != nil {
-				log.Fatalln("Listen failed", err.Error())
-				os.Exit(1)
-			}
+		  if viper.GetBool("prom") {
+			  // Create listener
+			  lis, err := net.Listen("tcp", addr)
+			  if err != nil {
+				  log.Fatalln("Listen failed", err.Error())
+				  os.Exit(1)
+			  }
 
-			tcpmux := cmux.New(lis)
-			httplis := tcpmux.Match(cmux.HTTP1Fast())
-			// grpclis := tcpmux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
-			// httplis := tcpmux.Match(cmux.Any())
-			grpclis := tcpmux.Match(cmux.Any())
-			errc := make(chan error, 1)
+			  tcpmux := cmux.New(lis)
+			  httplis := tcpmux.Match(cmux.HTTP1Fast())
+			  // grpclis := tcpmux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
+			  // httplis := tcpmux.Match(cmux.Any())
+			  grpclis := tcpmux.Match(cmux.Any())
+			  errc := make(chan error, 1)
 
-			// gRPC listener
-			go func() {
-				srv = NewGRPC(ip, port, debug)
-				err := srv.Serve(grpclis)
-				if err != cmux.ErrListenerClosed {
-					errc <- err
-				} else {
-					errc <- nil
-				}
-			}()
+			  // gRPC listener
+			  go func() {
+				  srv = NewGRPC(ip, port, debug)
+				  err := srv.Serve(grpclis)
+				  if err != cmux.ErrListenerClosed {
+					  errc <- err
+				  } else {
+					  errc <- nil
+				  }
+			  }()
 
-			// HTTP listener
-			go func() {
-				httpsrv = NewHTTP(serviceName, addr)
-				if Verbose > 0 {
-					log.Printf("Start http server: %s://%s/\n", protocol, addr)
-				}
-				err := httpsrv.Serve(httplis)
-				if err != cmux.ErrListenerClosed {
-					log.Errorln("httpsrv.Serve", err)
-					errc <- err
-				} else {
-					errc <- nil
-				}
-			}()
+			  // HTTP listener
+			  go func() {
+				  httpsrv = NewHTTP(serviceName, addr)
+				  if Verbose > 0 {
+					  log.Printf("Start http server: %s://%s/\n", protocol, addr)
+				  }
+				  err := httpsrv.Serve(httplis)
+				  if err != cmux.ErrListenerClosed {
+					  log.Errorln("httpsrv.Serve", err)
+					  errc <- err
+				  } else {
+					  errc <- nil
+				  }
+			  }()
 
-			// Start multiplexer
-			go func() { errc <- tcpmux.Serve() }()
+			  // Start multiplexer
+			  go func() { errc <- tcpmux.Serve() }()
 
-			// Wait for Ctrl+C and other signals
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
-			go func() {
-				killSignal := <-c
-				switch killSignal {
-				case syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT:
-					log.Println("[killSignal] shutdown signal:", killSignal)
-					srv.UnRegister()
-					// if IsLogrus && isProduction() {
-					//   LoggerHook.Flush()
-					// }
-					go srv.GracefulStop()
-				}
-				<-c
-				errc <- nil
-			}()
+			  // Wait for Ctrl+C and other signals
+			  c := make(chan os.Signal, 1)
+			  signal.Notify(c, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+			  go func() {
+				  killSignal := <-c
+				  switch killSignal {
+				  case syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT:
+					  log.Println("[killSignal] shutdown signal:", killSignal)
+					  srv.UnRegister()
+					  // if IsLogrus && isProduction() {
+					  //   LoggerHook.Flush()
+					  // }
+					  go srv.GracefulStop()
+				  }
+				  <-c
+				  errc <- nil
+			  }()
 
-			// Wait for completion
-			<-errc
+			  // Wait for completion
+			  <-errc
 
-			ctx, cansel := ctxhttp.WithTimeout(ctxhttp.Background(), 5*time.Second)
-			defer cansel()
-			httpsrv.SetKeepAlivesEnabled(false)
-			if err := httpsrv.Shutdown(ctx); err == http.ErrServerClosed {
-				log.Errorf("cannot gracefull shutdown HTTP server %s\n", err.Error())
-			} else {
-				log.Println("stop gracefull HTTP server")
-			}
-		} else {
-			log.Warningln("Start only gRPC server")
-			srv = NewGRPC(ip, port, debug)
-			if err := srv.ListenAndServe(); err == grpc.ErrServerStopped {
-				log.Println("STOP gRPC server")
-				srv.UnRegister()
-				srv.Stop()
-			}
-		}
+			  ctx, cansel := ctxhttp.WithTimeout(ctxhttp.Background(), 5*time.Second)
+			  defer cansel()
+			  httpsrv.SetKeepAlivesEnabled(false)
+			  if err := httpsrv.Shutdown(ctx); err == http.ErrServerClosed {
+				  log.Errorf("cannot gracefull shutdown HTTP server %s\n", err.Error())
+			  } else {
+				  log.Println("stop gracefull HTTP server")
+			  }
+		  } else {
+			  log.Warningln("Start only gRPC server")
+			  srv = NewGRPC(ip, port, debug)
+			  if err := srv.ListenAndServe(); err == grpc.ErrServerStopped {
+				  log.Println("STOP gRPC server")
+				  srv.UnRegister()
+				  srv.Stop()
+			  }
+		  }
+    }
 		os.Exit(0)
 	},
 }
@@ -223,6 +230,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/{{ .ConfigFileName }}.json)")
 	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
+  rootCmd.PersistentFlags().BoolVarP(&DistBuild, "dist", "", false, "copy Bash Completions to dist dir")
 
 	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
 	rootCmd.PersistentFlags().Bool("debug", false, "debug mode")

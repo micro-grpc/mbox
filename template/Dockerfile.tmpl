@@ -1,0 +1,50 @@
+#FROM golang:1.10.3-alpine3.8 AS builder
+#
+#WORKDIR /usr/local/go/src/gitlab.com/bbox-pos/bbox-setting
+#COPY . /usr/local/go/src/gitlab.com/bbox-pos/bbox-setting
+#
+#RUN apk update && apk upgrade && \
+#    apk add --no-cache bash git openssh
+#RUN go get ./...
+#RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo .
+
+FROM alpine:3.8
+MAINTAINER OLEG DOLYA <oleg.dolya@gmail.com>
+
+
+ENV PORT 7000
+#ENV HOST "0.0.0.0"
+ENV CONSUL_HTTP_ADDR 127.0.0.1:8500
+ENV LOG_LEVEL 0
+ENV appDir /app
+
+#EXPOSE ${PORT}
+
+RUN mkdir -p /app/bin
+RUN mkdir -p /app/config
+RUN mkdir -p /etc/bash_completion.d
+WORKDIR /app
+
+ENV PATH /app:$PATH
+
+COPY ./bashrc /root/.bashrc
+#COPY ./bashrc /app/.bashrc
+
+RUN apk update && apk upgrade && apk add --no-cache ca-certificates tzdata curl bash bash-completion sed grep bc coreutils
+# icu icu-libs icu-dev
+RUN sed -i -e "s/bin\/ash/bin\/bash/" /etc/passwd
+#RUN ln -fs /usr/share/zoneinfo/Europe/Kiev /etc/localtime
+
+#RUN locale-gen en_US.UTF-8
+#ENV LANG=en_US.UTF-8 \
+#    LANGUAGE=en_US.UTF-8 \
+#    LC_CTYPE=en_US.UTF-8 \
+#    LC_ALL=en_US.UTF-8
+#ENV LC_ALL=en_US.UTF-8
+
+COPY ./{{ .ConfigFileName }}.json /app/{{ .ConfigFileName }}.json
+COPY ./{{ .AppName }}.bash /etc/bash_completion.d/{{ .AppName }}.bash
+#COPY --from=builder /go/src/{{ .ProjectDir }} /app/{{ .AppName }}
+COPY ./dist/bin/{{ .AppName }} /app/{{ .AppName }}
+
+CMD ["/app/{{ .AppName }}"]

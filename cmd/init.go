@@ -116,7 +116,12 @@ func initializeProject(project *Project) {
 	//project.NameLicense = project.License().Name
 	project.Author = viper.GetString("author")
 
-	project.Folder.addFile("Makefile", "Makefile")
+  project.Folder.addFile("bashrc", "bashrc.tmpl")
+  project.Folder.addFile("bumper.sh", "bumper.sh.tmpl")
+  project.Folder.addFile("Dockerfile", "Dockerfile.tmpl")
+  project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
+
+	project.Folder.addFile("Makefile", "Makefile.tmpl")
 	project.Folder.addFile(fmt.Sprintf(".%s.yaml", project.AppName), "config.yaml.tmpl")
 
 	fh := project.Folder.addFolder("handler")

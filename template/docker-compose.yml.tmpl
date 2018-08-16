@@ -1,0 +1,64 @@
+
+version: '3.1'
+
+# docker stack deploy --compose-file=docker-compose.yml {{ .AppName }}
+networks:
+  my-net:
+    external:
+      name: net-external
+
+#volumes:
+#  my-vol:
+#    external:
+#      name: name-vol
+
+services:
+
+  bbox-setting:
+    image: 'registry.{{ .ProjectDir}}/{{ .AppName }}:0.3.1'
+    volumes:
+    - /var/srv/config/.bbox.json:/app/.bbox.json
+    networks:
+    - my-net
+    ports:
+    - 50001:50001
+    environment:
+      PORT: 50001
+      NODE_ENV: production
+      CONSUL_HTTP_ADDR: "127.0.0.1:8500"
+    #healthcheck:
+    #  test: curl --fail -s http://localhost:50001/healthz || exit 1
+    #  test: curl -sS http://localhost:50001/healthz
+    #  interval: 1m10s
+    #  timeout: 10s
+    #  retries: 3
+    deploy:
+      placement:
+        constraints:
+        - node.role == worker
+      restart_policy:
+        #condition: any
+        condition: on-failure
+        max_attempts: 5
+        delay: 5s
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        #failure_action: rollback
+        delay: 5s
+        #order: start-first
+        monitor: 30s
+      #        max_failure_ratio: 5
+      #      labels:
+      #        - traefik.port=5984
+      #        - traefik.frontend.rule=Host:pouchdb.local
+      #        - traefik.docker.network=net-external
+      #        - traefik.enable=true
+      #resources:
+      #  limits:
+      #    #cpus: '0.20'
+      #    memory: 1G
+      #  reservations:
+      #    #cpus: '0.20'
+      #    memory: 300M
