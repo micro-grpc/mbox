@@ -225,6 +225,7 @@ func createGitIgnoreFile(project *Project) {
 _obj
 _test
 .idea/*
+/dist/*
 
 # Architecture specific extensions/prefixes
 *.[568vq]
