@@ -126,7 +126,7 @@ func initializeProject(project *Project) {
 
 	fh := project.Folder.addFolder("handler")
   if viper.GetBool("sqlx") {
-    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.sqlx.go")
+    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.sqlx.go.tmpl")
   } else {
     fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.go.tmpl")
   }
