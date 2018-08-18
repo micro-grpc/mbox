@@ -58,10 +58,16 @@ var clientCmd = &cobra.Command{
 			}
 		}
 
+    addrConsul := viper.GetString("CONSUL_HTTP_ADDR")
+    isConsul, _ := cmd.Flags().GetBool("notConsul")
+    if isConsul {
+      addrConsul = "none"
+    }
+
 		options := []cl.ClientOption{
 			cl.SetServiceName(viper.GetString("service.name"), viper.GetString("service.namespace"), viper.GetString("client.address"), viper.GetInt("client.port")),
 			cl.SetSetting(Verbose, isDebug(), viper.GetBool("client.prom")),
-			cl.SetConsul(viper.GetBool("client.consul"), viper.GetString("CONSUL_HTTP_ADDR")),
+      cl.SetConsul(addrConsul),
 			// cl.SetTLS(cmd.tls),
 			// cl.SetCAFile(cmd.caFile),
 			// cl.SetMaxRetries(cmd.maxRetries),
@@ -132,7 +138,7 @@ func init() {
 	clientCmd.Flags().String("passwd", "", "Pasword for scheme `basic`")
 	clientCmd.Flags().String("address", "{{ .Address }}", "gRPC Server IP address")
 	clientCmd.Flags().IntP("port", "p", {{ .Port }}, "gRPC Server Port")
-	clientCmd.Flags().Bool("consul", true, "consul service discovery")
+  clientCmd.Flags().Bool("notConsul", false, "disable consul service discovery")
 	clientCmd.Flags().BoolP("prom", "", false, "support Prometheus")
 	clientCmd.Flags().String("level", "info", "logged level")
 	clientCmd.Flags().BoolVar(&IsLogrus, "logrus", false, "Logrus is a structured logger")
@@ -150,7 +156,6 @@ func init() {
 	viper.BindPFlag("client.port", clientCmd.Flags().Lookup("port"))
 	viper.BindPFlag("client.prom", clientCmd.Flags().Lookup("prom"))
 	viper.BindPFlag("client.level", clientCmd.Flags().Lookup("level"))
-	viper.BindPFlag("client.consul", clientCmd.Flags().Lookup("consul"))
 
 	viper.SetDefault("CONSUL_HTTP_ADDR", "127.0.0.1:8500")
 	viper.SetDefault("TOKEN", "")

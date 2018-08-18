@@ -39,6 +39,7 @@ type Client struct {
 	Conn           *grpc.ClientConn
 	tokenAuth      *TokenAuth
 	Addr           string
+	Port           int64
 	HealthChecks   []string
 	isConsul       bool
 	isAuth         bool
@@ -164,6 +165,8 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	opts = append(opts, grpc.WithBlock())
 
+  connectString := fmt.Sprintf("%s:%d", client.Addr, client.Port)
+
 	if client.isConsul {
 		if client.verbose > 0 {
 			log.Println("consul enabled...")
@@ -175,14 +178,16 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		opts = append(opts, grpc.WithBalancerName(roundrobin.Name))
 		opts = append(opts, grpc.WithBalancer(client.Balancer))
 		// client.Addr = client.ConsulAddress
+		connectString = client.Addr
 	}
 
 	var err error
 
+
 	if client.verbose > 0 {
-		log.Printf("Dial: %s ServiceName: %s namespace: %s\n", client.Addr, client.ServiceName, client.Namespace)
+		log.Printf("Dial: %s ServiceName: %s namespace: %s\n", connectString, client.ServiceName, client.Namespace)
 	}
-	client.Conn, err = grpc.Dial(client.Addr, opts...)
+	client.Conn, err = grpc.Dial(connectString, opts...)
 
 	return client, err
 }
@@ -263,12 +268,14 @@ func SetMaxRetries(maxRetries uint) ClientOption {
 	}
 }
 
-func SetConsul(isConsul bool, consulAddr string) ClientOption {
+func SetConsul(consulAddr string) ClientOption {
 	return func(client *Client) {
-		if isConsul {
+		if consulAddr != "none" {
 			client.ConsulAddress = consulAddr
 			client.isConsul = true
-		}
+		} else {
+		  client.isConsul = false
+    }
 	}
 }
 
@@ -292,6 +299,7 @@ func SetServiceName(name string, namespace string, addr string, port int) Client
 	return func(client *Client) {
 		client.ServiceName = name
 		client.Namespace = namespace
+		client.Port = int64(port)
 		if len(addr) == 0 {
 			ip := lib.ResolveHostIp()
 			client.Addr = fmt.Sprintf("%s:%d", ip, port)

@@ -53,7 +53,6 @@ var BashCompletion bool
 var DistBuild bool
 var ReleaseVersion string
 var defaultConfigName string
-var ConsulService bool
 var Mode string
 var IsLogrus bool
 var cfgFile string
@@ -241,7 +240,6 @@ func init() {
 	rootCmd.Flags().String("name", "{{ .ServiceName }}", "Service Name")
 	rootCmd.Flags().String("namespace", "{{ .Namespace }}", "Namespace for the service")
 	rootCmd.Flags().String("address", "{{ .Address }}", "gRPC Server IP address")
-	rootCmd.Flags().Int64P("port", "p", {{ .Port }}, "gRPC Server Port")
 	rootCmd.Flags().Bool("proxy", false, "gRPC to JSON proxy")
 	rootCmd.Flags().String("fqdn", "{{ .Fqdn }}", "FQDN of service")
 
@@ -251,7 +249,6 @@ func init() {
 	rootCmd.Flags().StringSliceP("params", "", []string{}, "Other Params from JWT token")
 
 	rootCmd.Flags().BoolP("auth", "", false, "support Authenticate")
-	rootCmd.Flags().BoolVar(&ConsulService, "consul", true, "consul service discovery")
 	rootCmd.Flags().StringP("level", "", "", "logged level")
 	rootCmd.Flags().BoolVarP(&IsLogrus, "logrus", "", false, "Logrus is a structured logger")
 
@@ -260,7 +257,6 @@ func init() {
 	viper.BindPFlag("NODE_ENV", rootCmd.Flags().Lookup("mode"))
 	viper.BindPFlag("name", rootCmd.Flags().Lookup("name"))
 	viper.BindPFlag("namespace", rootCmd.Flags().Lookup("namespace"))
-	viper.BindPFlag("port", rootCmd.Flags().Lookup("port"))
 	viper.BindPFlag("proxy", rootCmd.Flags().Lookup("proxy"))
 	viper.BindPFlag("fqdn", rootCmd.PersistentFlags().Lookup("fqdn"))
 
@@ -274,6 +270,8 @@ func init() {
 	viper.SetDefault("description", "")
 
 	viper.SetDefault("secret", "")
+  viper.SetDefault("HOST", "0")
+  viper.SetDefault("PORT", "9000")
 	viper.SetDefault("CONSUL_HTTP_ADDR", "127.0.0.1:8500")
 	viper.SetDefault("LOGGLY_TOKEN", "")
 }
@@ -330,7 +328,7 @@ func NewGRPC(ip string, port int, debug bool) *server.Server {
 		opts = append(opts, server.SetExtract())
 	}
 
-	opts = append(opts, server.SetConsul(ConsulService, viper.GetString("CONSUL_HTTP_ADDR"), time.Second*10, 15))
+  opts = append(opts, server.SetConsul(viper.GetString("CONSUL_HTTP_ADDR"), time.Second*10, 15))
 
 	if viper.GetBool("auth") {
 		AuthorizerService = authorize.NewAuthorize(viper.GetString("secret"), false, Check, CheckBasic)

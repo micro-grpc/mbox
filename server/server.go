@@ -413,14 +413,16 @@ func SetSetting(verbose int, debug bool, prom bool) ServerOption {
 	}
 }
 
-func SetConsul(isConsul bool, addr string, interval time.Duration, ttl int) ServerOption {
+func SetConsul(addr string, interval time.Duration, ttl int) ServerOption {
 	return func(s *Server) {
-		if isConsul {
+		if addr != "none" {
 			s.isConsul = true
 			s.consulInterval = interval
 			s.consulTtl = ttl
 			s.ConsulAddress = addr
-		}
+		} else {
+		  s.isConsul = false
+    }
 	}
 }
 

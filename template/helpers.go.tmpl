@@ -16,8 +16,8 @@ import (
 // --address=0 all interface
 // --address=8.8.8.8 only IP
 func GetIP() (ip string, addr string) {
-	ip = viper.GetString("address")
-	addr = viper.GetString("address")
+  ip = viper.GetString("HOST")
+  addr = viper.GetString("HOST")
 	if len(ip) == 0 {
 		ip = lib.ResolveHostIp()
 		addr = lib.ResolveHostIp()
