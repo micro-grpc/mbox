@@ -18,13 +18,13 @@ import (
 func GetIP() (ip string, addr string) {
   ip = viper.GetString("HOST")
   addr = viper.GetString("HOST")
-	if len(ip) == 0 {
-		ip = lib.ResolveHostIp()
-		addr = lib.ResolveHostIp()
-	} else if ip == "0" || ip == "0.0.0.0" {
-		ip = lib.ResolveHostIp()
-		addr = ""
-	}
+  if ip == "0" || ip == "0.0.0.0" {
+    ip = lib.ResolveHostIp()
+    addr = ""
+  } else {
+    ip = lib.ResolveHostIp()
+    addr = ip
+  }
 	return ip, addr
 }
 

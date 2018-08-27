@@ -12,7 +12,6 @@ import (
 	grpcvalidtor "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpcprom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	cr "github.com/micro-grpc/mbox/consul"
-	"github.com/micro-grpc/mbox/lib"
 	"github.com/micro-grpc/mbox/services/authorize"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -81,7 +80,7 @@ type ServerOption func(*Server)
 
 // NewServer creates a gRPC server which has no service registered and has not
 // started to accept requests yet.
-func NewServer(name string, namespace string, ip string, port int, options ...ServerOption) (server *Server) {
+func NewServer(name string, namespace string, addr string, ip string, port int, options ...ServerOption) (server *Server) {
 	server = &Server{
 		Version:        "latest",
 		HealthChecks:   nil,
@@ -120,29 +119,29 @@ func NewServer(name string, namespace string, ip string, port int, options ...Se
 	var cert tlspkg.Certificate
 	var opts []grpc.ServerOption
 
-	addr := ip
-	if len(ip) == 0 {
-		ip = lib.ResolveHostIp()
-	} else if ip == "0" {
-		ip = lib.ResolveHostIp()
-		addr = ""
-	}
-	if port == 0 {
-		port, err = lib.GetPort(ip)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-	}
+	//addr := ip
+	//if len(ip) == 0 {
+	//	ip = lib.ResolveHostIp()
+	//} else if ip == "0" {
+	//	ip = lib.ResolveHostIp()
+	//	addr = ""
+	//}
+	//if port == 0 {
+	//	port, err = lib.GetPort(ip)
+	//	if err != nil {
+	//		log.Fatalln(err.Error())
+	//	}
+	//}
 	server.ip = ip
 	server.port = port
-	server.Addr = fmt.Sprintf("%s:%d", addr, port)
+	server.Addr = addr
 	server.ServiceID = fmt.Sprintf("%s:%s:%d", name, ip, port)
 
 	for _, option := range options {
 		option(server)
 	}
 
-	log.Debugln("debug:", server.debug, "verbose:", server.verbose, "ServiceID:", server.ServiceID, "port:", server.port)
+	log.Debugln("debug:", server.debug, "verbose:", server.verbose, "ServiceID:", server.ServiceID, "listing:", server.Addr)
 	// Server options
 
 	if server.tls {

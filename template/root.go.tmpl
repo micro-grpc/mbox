@@ -143,7 +143,7 @@ var rootCmd = &cobra.Command{
 
 			  // gRPC listener
 			  go func() {
-				  srv = NewGRPC(ip, port, debug)
+				  srv = NewGRPC(addr, ip, port, debug)
 				  err := srv.Serve(grpclis)
 				  if err != cmux.ErrListenerClosed {
 					  errc <- err
@@ -201,7 +201,7 @@ var rootCmd = &cobra.Command{
 			  }
 		  } else {
 			  log.Warningln("Start only gRPC server")
-			  srv = NewGRPC(ip, port, debug)
+			  srv = NewGRPC(addr, ip, port, debug)
 			  if err := srv.ListenAndServe(); err == grpc.ErrServerStopped {
 				  log.Println("STOP gRPC server")
 				  srv.UnRegister()
@@ -316,7 +316,7 @@ func initConfig() {
 }
 
 // NewGRPC - Start gRPC server
-func NewGRPC(ip string, port int, debug bool) *server.Server {
+func NewGRPC(addr string, ip string, port int, debug bool) *server.Server {
 	var opts []server.ServerOption
 
 	opts = append(opts, server.SetDomain(viper.GetString("domain")))
@@ -347,7 +347,7 @@ func NewGRPC(ip string, port int, debug bool) *server.Server {
 
 	name := viper.GetString("name")
 	namespace := viper.GetString("namespace")
-	srv := server.NewServer(name, namespace, ip, port, opts...)
+	srv := server.NewServer(name, namespace, addr, ip, port, opts...)
 
 	// micro service logic
 	sp := handler.{{ .RelativeName }}Service{Debug: isDebug(), Version: ReleaseVersion}
