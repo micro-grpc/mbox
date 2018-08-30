@@ -73,7 +73,9 @@ var initCmd = &cobra.Command{
 
 		fmt.Fprintln(cmd.OutOrStdout(), "Your micro service is ready at", color.YellowString(project.AbsPath()),
 			"\n\nGive it a try by going there and running\n\n",
-			color.GreenString("make init"),
+      color.GreenString(fmt.Sprintf("cd %s && git init && git add -A && git commit -am \"init repo\"", project.AbsPath())),
+      "\n",
+			color.GreenString("make init OR make get"),
 			"\n",
 			color.GreenString("make protoc"),
 			"\n",
@@ -122,6 +124,7 @@ func initializeProject(project *Project) {
   project.Folder.addFile(".dockerignore", "dockerignore.tmpl")
   project.Folder.addFile("netrc.example", "netrc.example.tmpl")
   project.Folder.addFile("netrc.empty", "netrc.empty.tmpl")
+  project.Folder.addFile("README.md", "README.md.tmpl")
   project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
 
 	project.Folder.addFile("Makefile", "Makefile.tmpl")

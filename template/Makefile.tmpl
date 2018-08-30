@@ -21,6 +21,8 @@ TAG_VERSION=$(shell cat RELEASE)
 OSNAME=$(shell uname)
 GO=$(shell which go)
 
+GO_MODULE=on
+
 CUR_TIME=$(shell date '+%Y-%m-%d_%H:%M:%S')
 # Program version
 VERSION=$(shell cat RELEASE)
@@ -82,7 +84,8 @@ help:
 	@echo "..............................................................."
 	@echo "Project: $(PROJECT_NAME) | current dir: $(PROJECT_DIR)"
 	@echo "version: $(VERSION)\n"
-	@echo "make init         - Load project"
+	@echo "make init         - Load Libs for project"
+	@echo "make get          - Download modules"
 	@echo "make protoc       - Generate gRPC"
 	@echo "make build        - Build for current OS project"
 	@echo "make release      - Build release project"
@@ -113,9 +116,14 @@ init:
 	@go get -u github.com/tcncloud/protoc-gen-persist
 	@go get -v github.com/micro-grpc/protoc-gen-sqlx
 	@#go get -u github.com/zanven42/proto-database-go/protoc-gen-database
+	@@GO111MODULE=${GO_MODULE} go get ./...
 
 update:
-	@dep ensure -update
+	@#dep ensure -update
+	@GO111MODULE=${GO_MODULE} go get -u ./...
+
+get:
+	@GO111MODULE=${GO_MODULE} go get ./...
 
 protoc:
 	@echo "Generate gRPC"
@@ -186,13 +194,13 @@ shell:
 build-linux: clean
 	@mkdir -p $(DIST_BIN)
 	@echo "building version: ${VERSION} to  ${DIST_HOME}/${BIN_NAME}"
-	@DB_NAME=$(DB_TEST) DB_USER=$(DB_USER_TEST) DB_PASS=$(DB_PASS_TEST) DB_HOST=$(DB_HOST) GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o $(DIST_BIN)/$(BIN_NAME) main.go
+	@GO111MODULE=${GO_MODULE} DB_NAME=$(DB_TEST) DB_USER=$(DB_USER_TEST) DB_PASS=$(DB_PASS_TEST) DB_HOST=$(DB_HOST) GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o $(DIST_BIN)/$(BIN_NAME) main.go
 	@echo " "
 
 build: clean
 	@mkdir -p $(DIST_BIN)
 	@echo "building version: ${VERSION} to  ${DIST_HOME}/${BIN_NAME}"
-	@CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o ./$(BIN_NAME) main.go
+	@GO111MODULE=${GO_MODULE} CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o ./$(BIN_NAME) main.go
 	@echo " "
 
 version:

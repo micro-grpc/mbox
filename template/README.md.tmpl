@@ -1,0 +1,39 @@
+## Service
+
+## Quick start
+
+```bash
+cd {{ .AbsPath }}
+```
+
+Is first micro service
+
+```bash
+make init
+```
+
+Is not first micro service
+
+```bash
+make get
+```
+
+then
+
+```bash
+make protoc
+make build
+```
+
+
+Start example server not support Consul
+
+```bash
+CONSUL_HTTP_ADDR=none ./{{ .AppName }} -vvvv
+```
+
+Run example client not support Consul
+
+```bash
+./{{ .AppName }}  client -vvvv --address=localhost --notConsul --data ping
+```

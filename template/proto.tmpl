@@ -92,7 +92,13 @@ message PageInfo {
 }
 
 message Response {
-  bytes data = 1;
+  string message = 1;
+  bytes data = 2;
+  string pong = 3;
+}
+
+message Request {
+  string pong = 1;
 }
 
 message ResponseList {
@@ -129,6 +135,13 @@ message Mutation {
   repeated MutationField fields = 8;
 }
 
+message CouchDbExample {
+string id = 1 [(gogoproto.jsontag) = "_id"];
+string revision = 2 [(gogoproto.jsontag) = "_rev,omitempty"];
+bool deleted = 3 [(gogoproto.jsontag) = "_deleted,omitempty"];
+string name = 4;
+}
+
 message {{ .RelativeName }} {
   option (sql.opts).jsonb = true;
   option (sql.opts).orm = true;
@@ -151,4 +164,5 @@ service {{ .RelativeName }}Service  {
   rpc List (Query) returns (ResponseList);
   rpc Create (Mutation) returns (MutationResponse);
   rpc Update (Mutation) returns (Empty);
+  rpc {{ .RelativeName }} (Request) returns (Response);
 }
