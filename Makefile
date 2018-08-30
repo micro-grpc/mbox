@@ -86,8 +86,10 @@ help:
 	@echo "make update      - Update vendor files"
 	@echo "make test        - Run all test"
 	@echo "make version     - Current project version"
-	@echo "make push        - Push Docker image"
 	@echo "make serve       - Run local Docker image"
+	@echo "make build-docker - Build Docker image"
+	@echo "make push         - Push Docker image"
+	@echo "make publish      - Publication new Release"
 	@echo "...............................................................\n"
 
 init:
@@ -119,6 +121,14 @@ protoc:
 
 deploy:
 	@echo "TODO"
+
+publish:
+	@#./bumper.sh
+	@git add -A
+	@git commit -am "Bump version to v$(shell cat RELEASE)"
+	@git tag v$(shell cat RELEASE)
+	@git push --tags
+	@git push
 
 release: clean
 	@mkdir -p $(DIST_BIN)

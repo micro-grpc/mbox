@@ -38,3 +38,16 @@ mbox init github.com/micro-grpc/example-service --name=example
 ./ping client -vvvv --debug --data=pong --panic 1 --auth=basic --login=dev --passwd=12345678 --repeat=2
 ./ping client -vvvv --debug --data=pong --panic 1 --auth=jwt --repeat=3
 ```
+
+## Сборка Docker образа
+ 
+Если вы используете приватный репозиторий то необходимо прописать доступ в файле 
+который размещен в Вашей домашней директории ***.netrc*
+
+```bash
+machine github.com login [YOUR_GITHUB_USERNAME] password [YOUR_GITHUB_TOKEN]
+machine gitlab.com login [YOUR_GITLAB_USERNAME] password [YOUR_GITLAB_TOKEN]
+
+```
+
+Токены вы можете сгенерировать на страницах [Personal GitHub Token](https://github.com/settings/tokens) [Personal GitLab Token](https://gitlab.com/profile/personal_access_tokens).

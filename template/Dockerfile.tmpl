@@ -1,22 +1,36 @@
-#FROM golang:1.10.3-alpine3.8 AS builder
-#
-#WORKDIR /usr/local/go/src/gitlab.com/bbox-pos/bbox-setting
-#COPY . /usr/local/go/src/gitlab.com/bbox-pos/bbox-setting
-#
-#RUN apk update && apk upgrade && \
-#    apk add --no-cache bash git openssh
-#RUN go get ./...
-#RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo .
+#FROM golang:1.11.0-alpine3.8 AS builder
+
+ARG VERSION
+ENV VERSION=${VERSION}
+ARG GIT_COMMIT
+ENV GIT_COMMIT=${GIT_COMMIT}
+ARG CUR_TIME
+ENV CUR_TIME=${CUR_TIME}
+
+RUN mkdir -p /app/src
+WORKDIR /app/src
+
+RUN apk update && apk upgrade && \
+apk add --no-cache bash git openssh ca-certificates tzdata curl bzr bash-completion gcc musl-dev \
+icu icu-libs icu-dev sed grep bc coreutils
+
+COPY ./netrc /root/.netrc
+COPY . /app/src
+
+RUN go get ./...
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" .
+RUN mkdir -p /etc/bash_completion.d
+RUN ./{{ .AppName }} --bash-completion
 
 FROM alpine:3.8
 MAINTAINER OLEG DOLYA <oleg.dolya@gmail.com>
 
 
-ENV PORT 7000
+ENV PORT 50000
 #ENV HOST "0.0.0.0"
-ENV CONSUL_HTTP_ADDR 127.0.0.1:8500
+ENV NODE_ENV: production
+ENV CONSUL_HTTP_ADDR "172.17.0.1:8500"
 ENV LOG_LEVEL 0
-ENV appDir /app
 
 #EXPOSE ${PORT}
 
@@ -43,8 +57,7 @@ RUN sed -i -e "s/bin\/ash/bin\/bash/" /etc/passwd
 #ENV LC_ALL=en_US.UTF-8
 
 COPY ./{{ .ConfigFileName }}.json /app/{{ .ConfigFileName }}.json
-COPY ./{{ .AppName }}.bash /etc/bash_completion.d/{{ .AppName }}.bash
-#COPY --from=builder /go/src/{{ .ProjectDir }} /app/{{ .AppName }}
-COPY ./dist/bin/{{ .AppName }} /app/{{ .AppName }}
+COPY --from=builder /etc/bash_completion.d/{{ .AppName }}.bash /etc/bash_completion.d/{{ .AppName }}.bash
+COPY --from=builder /app/src/{{ .AppName }} /app/{{ .AppName }}
 
 CMD ["/app/{{ .AppName }}"]

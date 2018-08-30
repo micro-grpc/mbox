@@ -91,11 +91,13 @@ help:
 	@echo "make update       - Update vendor files"
 	@echo "make test         - Run all test"
 	@echo "make version      - Current project version"
-	@echo "make push         - Push Docker image"
 	@echo "make serve        - Run local Docker container"
 	@echo "make shell        - Connect to local Docker container"
 	@echo "make stop-docker  - Stop local Docker container"
 	@echo "make clean-docker - Clean local Docker image"
+	@echo "make build-docker - Build Docker image"
+	@echo "make push         - Push Docker image"
+	@echo "make publish      - Publication new Release"
 	@echo "...............................................................\n"
 
 init:
@@ -130,13 +132,17 @@ protoc:
 deploy:
 	@echo "TODO"
 
-copy-complete:
-	@rm -rf ./*.bash
-	@./{{ .AppName }} --bash-completion --dist
+publish:
+	@#./bumper.sh
+	@git add -A
+	@git commit -am "Bump version to v$(shell cat RELEASE)"
+	@git tag v$(shell cat RELEASE)
+	@git push --tags
+	@git push
 
-release: clean build copy-complete build-linux build-docker
-	@echo "Build Docker image: $(REPO_URL)$(TAG) Ok..."
-	@echo "RUN make push TO deploy image OR make serve TO start container"
+release: build-docker
+	@echo "Push Docker image: $(REPO_URL)$(TAG) to registry"
+	@docker push $(REPO_URL)$(TAG)
 
 clean:
 	@test ! -e ./${BIN_NAME} || rm ./${BIN_NAME}
@@ -168,7 +174,10 @@ stop-docker:
 	docker stop $(NAME)
 
 build-docker:
-	docker build --tag=$(REPO_URL)$(TAG) .
+	@echo "Build Docker image: $(REPO_URL)$(TAG)"
+	@test ! -e ${NETRC_FILE} || cp ${NETRC_FILE} ${PROJECT_DIR}/netrc
+	@test -e ${NETRC_FILE} || cp ${PROJECT_DIR}/netrc.empty ${PROJECT_DIR}/netrc
+	@docker build --build-arg VERSION=${VERSION} --build-arg GIT_COMMIT=${GIT_COMMIT} --build-arg CUR_TIME=${CUR_TIME} --tag=$(REPO_URL)$(TAG) .
 
 # Attach a root terminal to an already running dev shell
 shell:

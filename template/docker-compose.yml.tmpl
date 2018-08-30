@@ -24,8 +24,8 @@ services:
     - 50001:50001
     environment:
       PORT: 50001
-      NODE_ENV: production
-      CONSUL_HTTP_ADDR: "127.0.0.1:8500"
+    #  NODE_ENV: production
+    #  CONSUL_HTTP_ADDR: "127.0.0.1:8500"
     #healthcheck:
     #  test: curl --fail -s http://localhost:50001/healthz || exit 1
     #  test: curl -sS http://localhost:50001/healthz

@@ -119,6 +119,9 @@ func initializeProject(project *Project) {
   project.Folder.addFile("bashrc", "bashrc.tmpl")
   project.Folder.addFile("bumper.sh", "bumper.sh.tmpl")
   project.Folder.addFile("Dockerfile", "Dockerfile.tmpl")
+  project.Folder.addFile(".dockerignore", "dockerignore.tmpl")
+  project.Folder.addFile("netrc.example", "netrc.example.tmpl")
+  project.Folder.addFile("netrc.empty", "netrc.empty.tmpl")
   project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
 
 	project.Folder.addFile("Makefile", "Makefile.tmpl")
@@ -249,7 +252,8 @@ tmp/*
 node_modules/
 npm-debug.log
 /{{ .appName }}
-#/vendor/
+vendor/
+netrc
   `
 	data := make(map[string]interface{})
 	data["appName"] = path.Base(project.Name())
