@@ -57,6 +57,7 @@ var defaultConfigName string
 var Mode string
 var IsLogrus bool
 var cfgFile string
+var NotGrpc bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -139,19 +140,23 @@ var rootCmd = &cobra.Command{
 			  httplis := tcpmux.Match(cmux.HTTP1Fast())
 			  // grpclis := tcpmux.Match(cmux.HTTP2HeaderField("content-type", "application/grpc"))
 			  // httplis := tcpmux.Match(cmux.Any())
-			  grpclis := tcpmux.Match(cmux.Any())
-			  errc := make(chan error, 1)
 
-			  // gRPC listener
-			  go func() {
-				  srv = NewGRPC(addr, ip, port, debug)
-				  err := srv.Serve(grpclis)
-				  if err != cmux.ErrListenerClosed {
-					  errc <- err
-				  } else {
-					  errc <- nil
-				  }
-			  }()
+        errc := make(chan error, 1)
+
+        if NotGrpc {
+          grpclis := tcpmux.Match(cmux.Any())
+
+          // gRPC listener
+			    go func() {
+				    srv = NewGRPC(addr, ip, port, debug)
+				    err := srv.Serve(grpclis)
+				    if err != cmux.ErrListenerClosed {
+					    errc <- err
+				    } else {
+					    errc <- nil
+				    }
+			    }()
+        }
 
 			  // HTTP listener
 			  go func() {
@@ -231,6 +236,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/{{ .ConfigFileName }}.json)")
 	rootCmd.PersistentFlags().BoolVarP(&BashCompletion, "bash-completion", "", false, "Generating Bash Completions")
   rootCmd.PersistentFlags().BoolVarP(&DistBuild, "dist", "", false, "copy Bash Completions to dist dir")
+  rootCmd.PersistentFlags().BoolVarP(&NotGrpc, "no-grpc", "", false, "is not start gRPC server")
 
 	rootCmd.PersistentFlags().CountVarP(&Verbose, "verbose", "v", "verbose output")
 	rootCmd.PersistentFlags().Bool("debug", false, "debug mode")

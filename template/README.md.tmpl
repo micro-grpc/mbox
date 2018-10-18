@@ -32,6 +32,12 @@ Start example server not support Consul
 CONSUL_HTTP_ADDR=none ./{{ .AppName }} -vvvv
 ```
 
+Start only Web Server and not support Consul
+
+```bash
+CONSUL_HTTP_ADDR=none ./{{ .AppName }} -vvvv --prom --no-grpc
+```
+
 Run example client not support Consul
 
 ```bash

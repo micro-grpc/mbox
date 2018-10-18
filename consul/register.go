@@ -1,13 +1,13 @@
 package consul
 
 import (
-	"fmt"
-	consulapi "github.com/hashicorp/consul/api"
-	log "github.com/sirupsen/logrus"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+  "fmt"
+  consulapi "github.com/hashicorp/consul/api"
+  log "github.com/sirupsen/logrus"
+  "os"
+  "os/signal"
+  "syscall"
+  "time"
 )
 
 func UnRegister(name string, host string, port int, target string, verbose int) {
