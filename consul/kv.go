@@ -7,7 +7,7 @@ import (
 )
 
 // GetKV - получить данные для клюса
-func GetKV(prefix string, user string, key string, defaulVal string, conn *consulapi.Client) (val string) {
+func GetKV(prefix string, user string, key string, defaultVal string, conn *consulapi.Client) (val string) {
   k := fmt.Sprintf("%s/%s/%s", prefix, user, key)
   if len(key) == 0 {
     k = fmt.Sprintf("%s/%s", prefix, user)
@@ -16,7 +16,10 @@ func GetKV(prefix string, user string, key string, defaulVal string, conn *consu
 
   if err != nil {
     log.Errorln(err.Error())
-    return defaulVal
+    return defaultVal
+  }
+  if  kvp == nil {
+    return defaultVal
   }
   return string(kvp.Value)
 }
