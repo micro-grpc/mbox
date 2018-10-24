@@ -1,7 +1,7 @@
 module github.com/micro-grpc/mbox
 
 require (
-	cloud.google.com/go v0.30.0 // indirect
+	cloud.google.com/go v0.31.0 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/DataDog/datadog-go v0.0.0-20180822151419-281ae9f2d895 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
@@ -15,7 +15,7 @@ require (
 	github.com/go-chi/chi v3.3.3+incompatible
 	github.com/go-chi/jwtauth v3.3.0+incompatible
 	github.com/gogo/protobuf v1.1.1 // indirect
-	github.com/golang/lint v0.0.0-20181011164241-5906bd5c48cd // indirect
+	github.com/golang/lint v0.0.0-20181023182221-1baf3a9d7d67 // indirect
 	github.com/golang/protobuf v1.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
@@ -39,7 +39,7 @@ require (
 	github.com/mattn/go-isatty v0.0.4 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
-	github.com/miekg/dns v1.0.13 // indirect
+	github.com/miekg/dns v1.0.14 // indirect
 	github.com/mitchellh/go-homedir v1.0.0
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/pkg/errors v0.8.0
 	github.com/prometheus/client_golang v0.9.0 // indirect
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
-	github.com/prometheus/common v0.0.0-20181015124227-bcb74de08d37 // indirect
+	github.com/prometheus/common v0.0.0-20181020173914-7e9e6cabbd39 // indirect
 	github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
@@ -59,16 +59,16 @@ require (
 	github.com/spf13/viper v1.2.1
 	github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926 // indirect
 	github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6
-	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e // indirect
-	golang.org/x/lint v0.0.0-20181011164241-5906bd5c48cd // indirect
-	golang.org/x/net v0.0.0-20181017193950-04a2e542c03f
+	golang.org/x/crypto v0.0.0-20181024171144-74cb1d3d52f4 // indirect
+	golang.org/x/lint v0.0.0-20181023182221-1baf3a9d7d67 // indirect
+	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
 	golang.org/x/oauth2 v0.0.0-20181017192945-9dcd33a902f4 // indirect
-	golang.org/x/sys v0.0.0-20181011152604-fa43e7bc11ba // indirect
+	golang.org/x/sys v0.0.0-20181024145615-5cd93ef61a7c // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2
-	golang.org/x/tools v0.0.0-20181019005945-6adeb8aab2de // indirect
+	golang.org/x/tools v0.0.0-20181024171208-a2dc47679d30 // indirect
 	google.golang.org/appengine v1.2.0 // indirect
 	google.golang.org/genproto v0.0.0-20181016170114-94acd270e44e // indirect
-	google.golang.org/grpc v1.15.0
+	google.golang.org/grpc v1.16.0
 	gopkg.in/AlecAivazis/survey.v1 v1.6.2
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect

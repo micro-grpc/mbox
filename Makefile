@@ -18,6 +18,8 @@ TAG_VERSION=$(shell cat RELEASE)
 OSNAME=$(shell uname)
 GO=$(shell which go)
 
+GO_MODULE=on
+
 CUR_TIME=$(shell date '+%Y-%m-%d_%H:%M:%S')
 # Program version
 VERSION=$(shell cat RELEASE)
@@ -102,7 +104,8 @@ init:
 	@go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators
 
 update:
-	@dep ensure -update
+	@#dep ensure -update
+	@GO111MODULE=${GO_MODULE} go get -u ./...
 
 protoc:
 	@echo "Generate gRPC"
@@ -127,8 +130,8 @@ publish:
 	@git add -A
 	@git commit -am "Bump version to v$(shell cat RELEASE)"
 	@git tag v$(shell cat RELEASE)
-	@git push --tags
 	@git push
+	@git push --tags
 
 release: clean
 	@mkdir -p $(DIST_BIN)
@@ -175,13 +178,13 @@ shell:
 build-linux: clean
 	@mkdir -p $(DIST_BIN)
 	@echo "building version: ${VERSION} to  ${DIST_HOME}/${BIN_NAME}"
-	@DB_NAME=$(DB_TEST) DB_USER=$(DB_USER_TEST) DB_PASS=$(DB_PASS_TEST) DB_HOST=$(DB_HOST)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o $(DIST_BIN)/$(BIN_NAME) main.go
+	@GO111MODULE=${GO_MODULE} GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o $(DIST_BIN)/$(BIN_NAME) main.go
 	@echo " "
 
 build: clean
 	@mkdir -p $(DIST_BIN)
 	@echo "building version: ${VERSION} to  ${DIST_HOME}/${BIN_NAME}"
-	@CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o ./$(BIN_NAME) main.go
+	@GO111MODULE=${GO_MODULE} CGO_ENABLED=0 go build -a -installsuffix cgo -tags netgo -ldflags "-s -w -X main.release=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${CUR_TIME}" -o ./$(BIN_NAME) main.go
 	@echo " "
 
 version:

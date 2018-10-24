@@ -128,7 +128,7 @@ func initializeProject(project *Project) {
   project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
 
 	project.Folder.addFile("Makefile", "Makefile.tmpl")
-	project.Folder.addFile(fmt.Sprintf(".%s.yaml", project.AppName), "config.yaml.tmpl")
+	project.Folder.addFile(fmt.Sprintf(".%s.json", project.AppName), "config.json.tmpl")
 
 	fh := project.Folder.addFolder("handler")
   if viper.GetBool("sqlx") {

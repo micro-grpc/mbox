@@ -44,6 +44,43 @@ Run example client not support Consul
 ./{{ .AppName }}  client -vvvv --address=localhost --notConsul --data ping
 ```
 
+### Build Docker image
+
+Modify **${HOME}/.netrc**
+
+Change [Makefile](Makefile) GITLAB_GROUP/GITLAB_PROJECT to your value
+
+```makefile
+REPO_BASE_PATH ?= GITLAB_GROUP/GITLAB_PROJECT
+```
+
+For development in the first terminal
+
+```bash
+make build-docker
+make serve
+```
+
+In the second terminal
+
+```bash
+make shell
+export CONSUL_HTTP_ADDR=127.0.0.1:8500
+./{{ .AppName }}  -vvvv client
+```
+
+## Application Publishing
+
+```bash
+make publish
+```
+
+### Docker Swarm mode
+
+```bash
+make push
+```
+
 Add sub command
 
 ```bash

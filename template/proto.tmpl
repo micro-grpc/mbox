@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package {{ .PackageName }};
 
-option go_package = "{{ .ProjectDir }}/pb/{{ .PackageName }};{{ .PackageName }}";
+// option go_package = "{{ .ProjectDir }}/pb/{{ .PackageName }};{{ .PackageName }}";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 //import "github.com/infobloxopen/protoc-gen-gorm/options/gorm.proto";

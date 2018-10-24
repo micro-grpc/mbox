@@ -46,6 +46,7 @@ DIST_BIN="${DIST_DIR}/bin"
 
 NAME ?= ${PROJECT_NAME}
 TAG=${REPO_BASE_PATH}/$(PROJECT_NAME):$(TAG_VERSION)
+NETRC_FILE=${HOME}/.netrc
 
 BUILD_TAGS ?= "netgo"
 BUILD_TAGS_BINDATA ?= "netgo bindatafs"
@@ -73,7 +74,7 @@ GO_LINKER_FLAGS ?= -ldflags '$(EXTLDFLAGS) -s -w \
 #endif
 URL=$(shell dinghy ip)
 
-PROTO_OUT=${GOPATH}/src
+PROTO_OUT=../lib
 # PROTO_OUT=.
 
 MODIFY=Mgoogle/protobuf/timestamp.proto=github.com/gogo/protobuf/types
@@ -127,7 +128,8 @@ get:
 
 protoc:
 	@echo "Generate gRPC"
-	@protoc --proto_path=${GOPATH}/src \
+	@mkdir -p ./lib
+	@cd pb && protoc --proto_path=${GOPATH}/src \
 	  --proto_path=${GOPATH}/src/github.com/gogo/protobuf/protobuf \
 	  -I=. \
     --gofast_out=${MODIFY},plugins=grpc:${PROTO_OUT}  \
@@ -135,7 +137,7 @@ protoc:
     --sqlx_out=${MODIFY}:${PROTO_OUT} \
     -I=/usr/local/include \
     -I=${GOPATH} \
-	  pb/**/*.proto
+	  **/*.proto && cd ..
 
 deploy:
 	@echo "TODO"
@@ -145,8 +147,8 @@ publish:
 	@git add -A
 	@git commit -am "Bump version to v$(shell cat RELEASE)"
 	@git tag v$(shell cat RELEASE)
-	@git push --tags
 	@git push
+	@git push --tags
 
 release: build-docker
 	@echo "Push Docker image: $(REPO_URL)$(TAG) to registry"

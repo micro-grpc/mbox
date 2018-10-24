@@ -1,5 +1,5 @@
 
-version: '3.1'
+version: '3.3'
 
 # docker stack deploy --compose-file=docker-compose.yml {{ .AppName }}
 networks:
@@ -14,10 +14,10 @@ networks:
 
 services:
 
-  bbox-setting:
-    image: 'registry.{{ .ProjectDir}}/{{ .AppName }}:0.3.1'
+  {{ .AppName }}:
+    image: 'registry.{{ .ProjectDir}}/{{ .AppName }}:0.0.1'
     volumes:
-    - /var/srv/config/.bbox.json:/app/.bbox.json
+    - /var/srv/config/{{ .ConfigFileName }}.json:/app/{{ .ConfigFileName }}.json
     networks:
     - my-net
     ports:
