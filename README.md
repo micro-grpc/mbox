@@ -6,7 +6,7 @@ Installing **mBox**, you can install the cmd line app to generate new micro serv
 
 ```bash
 brew install protobuf
-go get -u github.com/micro-grpc/mbox/...
+GO111MODULE=on go get -u github.com/micro-grpc/mbox/...
 sudo mbox --bash-completion
 ```
 

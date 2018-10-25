@@ -22,16 +22,16 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/fatih/color"
-	"github.com/mattn/go-colorable"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/fatih/color"
+	"github.com/mattn/go-colorable"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var gopath string
@@ -73,8 +73,8 @@ var initCmd = &cobra.Command{
 
 		fmt.Fprintln(cmd.OutOrStdout(), "Your micro service is ready at", color.YellowString(project.AbsPath()),
 			"\n\nGive it a try by going there and running\n\n",
-      color.GreenString(fmt.Sprintf("cd %s && git init && git add -A && git commit -am \"init repo\"", project.AbsPath())),
-      "\n",
+			color.GreenString(fmt.Sprintf("cd %s && git init && git add -A && git commit -am \"init repo\"", project.AbsPath())),
+			"\n",
 			color.GreenString("make init OR make get"),
 			"\n",
 			color.GreenString("make protoc"),
@@ -118,24 +118,24 @@ func initializeProject(project *Project) {
 	//project.NameLicense = project.License().Name
 	project.Author = viper.GetString("author")
 
-  project.Folder.addFile("bashrc", "bashrc.tmpl")
-  project.Folder.addFile("bumper.sh", "bumper.sh.tmpl")
-  project.Folder.addFile("Dockerfile", "Dockerfile.tmpl")
-  project.Folder.addFile(".dockerignore", "dockerignore.tmpl")
-  project.Folder.addFile("netrc.example", "netrc.example.tmpl")
-  project.Folder.addFile("netrc.empty", "netrc.empty.tmpl")
-  project.Folder.addFile("README.md", "README.md.tmpl")
-  project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
+	project.Folder.addFile("bashrc", "bashrc.tmpl")
+	project.Folder.addFile("bumper.sh", "bumper.sh.tmpl")
+	project.Folder.addFile("Dockerfile", "Dockerfile.tmpl")
+	project.Folder.addFile(".dockerignore", "dockerignore.tmpl")
+	project.Folder.addFile("netrc.example", "netrc.example.tmpl")
+	project.Folder.addFile("netrc.empty", "netrc.empty.tmpl")
+	project.Folder.addFile("README.md", "README.md.tmpl")
+	project.Folder.addFile("docker-compose.yml", "docker-compose.yml.tmpl")
 
 	project.Folder.addFile("Makefile", "Makefile.tmpl")
 	project.Folder.addFile(fmt.Sprintf(".%s.json", project.AppName), "config.json.tmpl")
 
 	fh := project.Folder.addFolder("handler")
-  if viper.GetBool("sqlx") {
-    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.sqlx.go.tmpl")
-  } else {
-    fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.go.tmpl")
-  }
+	if viper.GetBool("sqlx") {
+		fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.sqlx.go.tmpl")
+	} else {
+		fh.addFile(fmt.Sprintf("%s.go", project.PackageName), "handler.go.tmpl")
+	}
 
 	fpb := project.Folder.addFolder("pb")
 	fpbi := fpb.addFolder(project.PackageName)
@@ -143,9 +143,10 @@ func initializeProject(project *Project) {
 
 	fcmd := project.Folder.addFolder("cmd")
 
-  fcmd.addFile("helpers.go", "helpers.go.tmpl")
-  fcmd.addFile("client.go", "client.go.tmpl")
 	fcmd.addFile("root.go", "root.go.tmpl")
+	fcmd.addFile("helpers.go", "helpers.go.tmpl")
+	fcmd.addFile("client.go", "client.go.tmpl")
+	fcmd.addFile("version.go", "version.go.tmpl")
 
 	if err := project.write(templatePath); err != nil {
 		er(err)
