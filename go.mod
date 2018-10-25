@@ -63,13 +63,13 @@ require (
 	golang.org/x/lint v0.0.0-20181023182221-1baf3a9d7d67 // indirect
 	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
 	golang.org/x/oauth2 v0.0.0-20181017192945-9dcd33a902f4 // indirect
-	golang.org/x/sys v0.0.0-20181024145615-5cd93ef61a7c // indirect
+	golang.org/x/sys v0.0.0-20181025063200-d989b31c8746 // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2
 	golang.org/x/tools v0.0.0-20181024171208-a2dc47679d30 // indirect
 	google.golang.org/appengine v1.2.0 // indirect
 	google.golang.org/genproto v0.0.0-20181016170114-94acd270e44e // indirect
 	google.golang.org/grpc v1.16.0
-	gopkg.in/AlecAivazis/survey.v1 v1.6.2
+	gopkg.in/AlecAivazis/survey.v1 v1.6.3
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
