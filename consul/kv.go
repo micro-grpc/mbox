@@ -23,3 +23,19 @@ func GetKV(prefix string, user string, key string, defaultVal string, conn *cons
   }
   return string(kvp.Value)
 }
+
+// AddKV - добавляем ключ в Consul KV
+func AddKV(prefix string, user string, key string, val string, conn *consulapi.Client) (err error, mess string) {
+  k := fmt.Sprintf("%s/%s/%s", prefix, user, key)
+  if len(key) == 0 {
+    k = fmt.Sprintf("%s/%s", prefix, user)
+  }
+  item := &consulapi.KVPair{Key: k, Value: []byte(val)}
+  // Consul.KV().Acquire(item, nil)
+  res, err := conn.KV().Put(item, nil)
+  if err != nil {
+    //panic(err)
+    return err, ""
+  }
+  return nil, fmt.Sprintf("затрачено: %v", res.RequestTime)
+}
