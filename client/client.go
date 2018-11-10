@@ -165,7 +165,8 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	opts = append(opts, grpc.WithBlock())
 
-  connectString := fmt.Sprintf("%s:%d", client.Addr, client.Port)
+  //connectString := fmt.Sprintf("%s:%d", client.Addr, client.Port)
+  connectString := client.Addr
 
 	if client.isConsul {
 		if client.verbose > 0 {
