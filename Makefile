@@ -105,6 +105,7 @@ init:
 
 update:
 	@#dep ensure -update
+	@GO111MODULE=${GO_MODULE} go get -u gopkg.in/resty.v1
 	@GO111MODULE=${GO_MODULE} go get -u ./...
 
 protoc:

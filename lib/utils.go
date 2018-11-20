@@ -2,6 +2,7 @@ package lib
 
 import (
   "fmt"
+  "math/rand"
   "regexp"
   "strings"
   "bytes"
@@ -105,4 +106,26 @@ func Contains(a []string, x string) bool {
     }
   }
   return false
+}
+
+// RandSeq - generate random string
+func RandSeq(n int) string {
+  var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+  rand.Seed(time.Now().UnixNano())
+  b := make([]rune, n)
+  for i := range b {
+    b[i] = letters[rand.Intn(len(letters))]
+  }
+  return string(b)
+}
+
+// RandNumberSeq generate random number string
+func RandNumberSeq(n int) string {
+  var letters = []rune("1234567890")
+  rand.Seed(time.Now().UnixNano())
+  b := make([]rune, n)
+  for i := range b {
+    b[i] = letters[rand.Intn(len(letters))]
+  }
+  return string(b)
 }
